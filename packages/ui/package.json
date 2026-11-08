@@ -1,0 +1,47 @@
+{
+  "name": "@local/dsh-egm-ui",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Browser surfaces for the Elephant-Goldfish Model on DeepSeek Harness: a run chip with routes and children, a reviewer card, and an EGM settings page. Loads only in a profile that composes the Web shell.",
+  "license": "Apache-2.0",
+  "author": "Daniel",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dannielcordeiro/dsh-egm.git",
+    "directory": "packages/ui"
+  },
+  "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "egm"],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./src/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["index.js", "src", "cordis.patch.yml", "locale", "icon.svg", "README.md"],
+  "engines": {
+    "dsh": ">=0.2.1-rc.5 <0.3.0",
+    "node": ">=22 <25"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-tool"
+      ]
+    }
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check src/client.js",
+    "test": "node --test test/*.test.js"
+  }
+}

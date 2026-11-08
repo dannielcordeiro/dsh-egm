@@ -1,0 +1,8 @@
+- insert:
+    # One row, and one row only: a package that declares `dsh.client` must
+    # resolve from exactly one active Loader source. The row is disabled in a
+    # profile that composes no Web client host (the terminal and headless
+    # profiles), where this package has nothing to contribute.
+    - id: egm-ui
+      name: '@local/dsh-egm-ui'
+      disabled: !!js "![...ctx.loader.entries()].some(entry => entry.options.name === '@deepseek-ai/dsh-client-modules' && !entry.disabled)"
