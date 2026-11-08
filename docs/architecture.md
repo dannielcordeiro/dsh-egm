@@ -97,6 +97,18 @@ construction: it renders the `egmRun` projection, and every change goes through 
 human, exactly as in the terminal. `packages/ui/test/client.test.js` fails if the bundle ever references
 `remote.commands.execute` or a polling timer.
 
+## Why `/egm …` output needed a renderer in the browser
+
+The web folds `command/run` + `command/done` into a chat node whose body comes from the keyed slot
+`conversation.chat.commandview`, keyed by the command name. An unoccupied key falls back to a generic card
+that carries no text, so a third-party command ran, logged its lifecycle and showed nothing on screen.
+`packages/ui` now registers that key for `egm` and renders the command line plus its outcome text.
+
+The terminal needs none of this: it prints command results as a local block.
+
+What the browser does not have is the terminal's nested completion: there, `tuiCommandTrees` expands
+`/egm model …` into roles and stages. In the browser the `/` list is flat.
+
 ## Terminal surfaces
 
 `tuiStatus.setField`, `tuiPanels.register`, `tuiCommandTrees.register`, `tuiSettingsSections.register` and

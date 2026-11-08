@@ -56,6 +56,14 @@ window.__ModuleLoader__.load({
 .egm-empty{color:var(--dsw-alias-label-secondary);font-size:12px}
 .egm-tool{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dsw-alias-label-secondary)}
 .egm-tool code{font-family:var(--dsw-font-mono,ui-monospace,monospace)}
+.egm-cmd{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:20px}
+.egm-cmd-head{display:flex;align-items:center;gap:8px;font-family:var(--dsw-font-mono,ui-monospace,monospace);font-size:12px}
+.egm-cmd-name{color:var(--dsw-alias-label-primary)}
+.egm-cmd-args{color:var(--dsw-alias-label-secondary)}
+.egm-cmd-tag{font-size:11px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);color:var(--dsw-alias-label-secondary)}
+.egm-cmd-tag[data-kind="error"]{background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#dc2626) 14%,transparent);color:var(--dsw-alias-state-error-primary,#dc2626)}
+.egm-cmd-tag[data-kind="success"]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);color:var(--dsw-alias-brand-primary)}
+.egm-cmd-body{margin:0;padding:8px 10px;border:.5px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md,8px);background:var(--dsw-alias-bg-layer-1);font-family:var(--dsw-font-mono,ui-monospace,monospace);font-size:12px;line-height:18px;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
 .egm-page{display:flex;flex-direction:column;gap:14px;max-width:720px;font-size:13px;line-height:21px}
 .egm-page h3{margin:0;font-size:15px}
 .egm-page p{margin:0;color:var(--dsw-alias-label-secondary)}
@@ -257,6 +265,32 @@ window.__ModuleLoader__.load({
           : null)
     }
 
+    // ---- command row --------------------------------------------------------
+
+    /**
+     * Render one `/egm …` lifecycle as a chat row.
+     *
+     * The web folds `command/run` + `command/done` into a node and asks this seat
+     * for the body; without a renderer the row carries no text, which is why the
+     * output of a third-party command is invisible in the browser.
+     */
+    function CommandRow({ node }) {
+      const command = node?.command ?? node
+      if (command === null || command === undefined) return null
+      const outcome = command.outcome
+      const args = typeof command.args === 'string' ? command.args.trim() : ''
+      const kind = outcome?.kind ?? 'running'
+      return h('div', { className: 'egm-cmd' },
+        h('style', null, CSS),
+        h('div', { className: 'egm-cmd-head' },
+          h('span', { className: 'egm-cmd-name' }, `/${command.name ?? 'egm'}`),
+          args === '' ? null : h('span', { className: 'egm-cmd-args' }, args),
+          h('span', { className: 'egm-cmd-tag', 'data-kind': kind }, kind === 'running' ? 'running' : kind)),
+        typeof outcome?.text === 'string' && outcome.text !== ''
+          ? h('pre', { className: 'egm-cmd-body' }, outcome.text)
+          : null)
+    }
+
     // ---- reviewer card ------------------------------------------------------
 
     function ReviewerCard({ phase, block }) {
@@ -318,6 +352,18 @@ window.__ModuleLoader__.load({
           locale: NS,
           label: () => 'EGM',
         }, Chip))
+
+        // Body of the `/egm …` row: without it the browser shows the command
+        // lifecycle with no text at all.
+        try {
+          ctx.slots.inject('conversation.chat.commandview', () => ctx.slots.register({
+            name: 'conversation.chat.commandview',
+            key: 'egm',
+            locale: NS,
+          }, CommandRow))
+        } catch (error) {
+          console.warn(`dsh-egm-ui: command row not registered: ${String(error?.message ?? error)}`)
+        }
 
         // Compact card for a reviewer activation.
         try {

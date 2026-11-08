@@ -73,6 +73,10 @@ test('the client bundle registers itself under the package name', async () => {
   assert.equal(typeof locale.dict.pt.settingsTitle, 'string')
   assert.deepEqual(Object.keys(locale.dict.en).sort(), Object.keys(locale.dict.pt).sort(), 'both dictionaries must have the same keys')
 
+  const commandRow = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'conversation.chat.commandview')
+  assert.equal(commandRow.options.key, 'egm', 'the /egm row needs its own body or it renders no text')
+  assert.equal(typeof commandRow.component, 'function')
+
   const chip = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'conversation.input.right')
   assert.equal(chip.options.id, 'egm-run')
   assert.equal(typeof chip.component, 'function')
@@ -83,7 +87,7 @@ test('the client bundle registers itself under the package name', async () => {
 
   const section = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'settings.section')
   assert.equal(section.options.id, 'egm')
-  assert.deepEqual(injected, ['conversation.input.right'])
+  assert.deepEqual(injected.sort(), ['conversation.chat.commandview', 'conversation.input.right'])
 
   // The browser half must never poll a command: a command result is appended to
   // the session transcript, and polling one floods the chat and the host log.
