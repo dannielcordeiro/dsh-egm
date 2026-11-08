@@ -121,6 +121,28 @@ function testCommand(role, value) {
   return route.includes('/') ? `/egm model test ${route}` : `/egm model test ${name}`
 }
 
+/**
+ * Decide what an Apply click does for one row.
+ *
+ * The field shows the effective route until the user types over it, so an
+ * untouched row still applies what the screen shows. A row with nothing to apply
+ * returns a reason instead of doing nothing silently.
+ * @param {{role: string, text: string}} entry the route row.
+ * @param {string|undefined} draft what the user typed, if anything.
+ * @param {'profile'|'session'} [scope] where to write.
+ * @returns {{command: string}|{error: string}}
+ */
+function applyPlan(entry, draft, scope) {
+  const typed = String(draft ?? '').trim()
+  const value = typed !== '' ? typed : (entry?.text === 'inherit' ? '' : String(entry?.text ?? '').trim())
+  if (value === '') return { error: 'a route is required: type provider/model#effort' }
+  try {
+    return { command: routeCommand(entry, value, scope) }
+  } catch (failure) {
+    return { error: failure instanceof Error ? failure.message : String(failure) }
+  }
+}
+
 /** Display name for the merge, used by the tests and the window. */
 const buildRuns = mergeChildren
 

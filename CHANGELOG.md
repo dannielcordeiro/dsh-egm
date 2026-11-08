@@ -54,6 +54,10 @@
 - The command line is built by a tested helper: the row object was being
   interpolated, so every Apply sent `/egm model set [object Object] …` and the
   host answered "unknown role".
+- Apply then stopped running anything at all: the handler still named a variable
+  that no longer existed, threw before building the command, and the rejection was
+  swallowed by `void`. A pure `applyPlan()` now decides the command (or the
+  reason) and every click surfaces its failure in the window.
 
 **Repository**
 

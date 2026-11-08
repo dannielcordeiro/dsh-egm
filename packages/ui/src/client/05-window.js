@@ -111,7 +111,7 @@ function EgmWindow({ ctx, t }) {
   if (state.tab === 'runs') {
     body = h(RunsTab, { t, runs: filtered, all: runs, phase, elephant, sessionId, stageFilter, setStageFilter, ctx })
   } else if (state.tab === 'config') {
-    body = h(ConfigTab, { t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue })
+    body = h(ConfigTab, { t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue, onError: setError })
   } else if (state.tab === 'artifacts') {
     body = h(ArtifactsTab, { t, artifacts: view?.artifacts ?? [] })
   } else {
@@ -207,7 +207,7 @@ function RunsTab({ t, runs, all, phase, elephant, sessionId, stageFilter, setSta
 }
 
 /** Configuration tab: one row per role, edits sent as commands on click. */
-function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue }) {
+function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue, onError }) {
   if (routes === null) return h('div', { className: 'egm-empty' }, t('loading'))
   const roles = routes.roles ?? []
   const providerModels = catalogue?.models ?? []
@@ -217,10 +217,13 @@ function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalo
   const visibleOf = (entry) => draftOf(entry.role) || (entry.text === 'inherit' ? '' : entry.text)
   const setDraft = (role, value) => setDrafts({ ...drafts, [role]: value })
   const apply = async (entry, scope) => {
-    const value = visibleOf(entry).trim()
-    if (value === '') return
-    await act(routeCommand(role, value, scope), () => {
-      setDrafts({ ...drafts, [role]: '' })
+    const plan = applyPlan(entry, visibleOf(entry), scope)
+    if (plan.error !== undefined) {
+      onError(plan.error)
+      return
+    }
+    await act(plan.command, () => {
+      setDrafts({ ...drafts, [entry.role]: '' })
       void loadRoutes()
     })
   }
@@ -247,8 +250,8 @@ function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalo
         list: providerModels.length === 0 ? undefined : 'egm-route-list',
       }),
       h('span', { className: 'egm-src', title: `${t('source')}: ${role.source}` }, role.text),
-      h('button', { type: 'button', className: 'egm-btn primary', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'profile') }, t('configApply')),
-      h('button', { type: 'button', className: 'egm-btn', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'session') }, t('configApplySession')),
+      h('button', { type: 'button', className: 'egm-btn primary', disabled: busy, onClick: () => void apply(role, 'profile').catch((failure) => onError(String(failure?.message ?? failure))) }, t('configApply')),
+      h('button', { type: 'button', className: 'egm-btn', disabled: busy, onClick: () => void apply(role, 'session').catch((failure) => onError(String(failure?.message ?? failure))) }, t('configApplySession')),
       h('button', {
         type: 'button',
         className: 'egm-btn',

@@ -306,6 +306,28 @@ window.__ModuleLoader__.load({
       return route.includes('/') ? `/egm model test ${route}` : `/egm model test ${name}`
     }
 
+    /**
+     * Decide what an Apply click does for one row.
+     *
+     * The field shows the effective route until the user types over it, so an
+     * untouched row still applies what the screen shows. A row with nothing to apply
+     * returns a reason instead of doing nothing silently.
+     * @param {{role: string, text: string}} entry the route row.
+     * @param {string|undefined} draft what the user typed, if anything.
+     * @param {'profile'|'session'} [scope] where to write.
+     * @returns {{command: string}|{error: string}}
+     */
+    function applyPlan(entry, draft, scope) {
+      const typed = String(draft ?? '').trim()
+      const value = typed !== '' ? typed : (entry?.text === 'inherit' ? '' : String(entry?.text ?? '').trim())
+      if (value === '') return { error: 'a route is required: type provider/model#effort' }
+      try {
+        return { command: routeCommand(entry, value, scope) }
+      } catch (failure) {
+        return { error: failure instanceof Error ? failure.message : String(failure) }
+      }
+    }
+
     /** Display name for the merge, used by the tests and the window. */
     const buildRuns = mergeChildren
 
@@ -595,7 +617,7 @@ window.__ModuleLoader__.load({
       if (state.tab === 'runs') {
         body = h(RunsTab, { t, runs: filtered, all: runs, phase, elephant, sessionId, stageFilter, setStageFilter, ctx })
       } else if (state.tab === 'config') {
-        body = h(ConfigTab, { t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue })
+        body = h(ConfigTab, { t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue, onError: setError })
       } else if (state.tab === 'artifacts') {
         body = h(ArtifactsTab, { t, artifacts: view?.artifacts ?? [] })
       } else {
@@ -691,7 +713,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Configuration tab: one row per role, edits sent as commands on click. */
-    function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue }) {
+    function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalogue, setCatalogue, onError }) {
       if (routes === null) return h('div', { className: 'egm-empty' }, t('loading'))
       const roles = routes.roles ?? []
       const providerModels = catalogue?.models ?? []
@@ -701,10 +723,13 @@ window.__ModuleLoader__.load({
       const visibleOf = (entry) => draftOf(entry.role) || (entry.text === 'inherit' ? '' : entry.text)
       const setDraft = (role, value) => setDrafts({ ...drafts, [role]: value })
       const apply = async (entry, scope) => {
-        const value = visibleOf(entry).trim()
-        if (value === '') return
-        await act(routeCommand(role, value, scope), () => {
-          setDrafts({ ...drafts, [role]: '' })
+        const plan = applyPlan(entry, visibleOf(entry), scope)
+        if (plan.error !== undefined) {
+          onError(plan.error)
+          return
+        }
+        await act(plan.command, () => {
+          setDrafts({ ...drafts, [entry.role]: '' })
           void loadRoutes()
         })
       }
@@ -731,8 +756,8 @@ window.__ModuleLoader__.load({
             list: providerModels.length === 0 ? undefined : 'egm-route-list',
           }),
           h('span', { className: 'egm-src', title: `${t('source')}: ${role.source}` }, role.text),
-          h('button', { type: 'button', className: 'egm-btn primary', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'profile') }, t('configApply')),
-          h('button', { type: 'button', className: 'egm-btn', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'session') }, t('configApplySession')),
+          h('button', { type: 'button', className: 'egm-btn primary', disabled: busy, onClick: () => void apply(role, 'profile').catch((failure) => onError(String(failure?.message ?? failure))) }, t('configApply')),
+          h('button', { type: 'button', className: 'egm-btn', disabled: busy, onClick: () => void apply(role, 'session').catch((failure) => onError(String(failure?.message ?? failure))) }, t('configApplySession')),
           h('button', {
             type: 'button',
             className: 'egm-btn',
@@ -1026,6 +1051,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand } }
+    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand, applyPlan } }
   },
 })

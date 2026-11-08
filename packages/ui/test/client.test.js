@@ -165,6 +165,19 @@ test('the test command targets the typed route when there is one', () => {
   assert.throws(() => testCommand(undefined, ''), /role name/u)
 })
 
+test('an Apply click always produces a command or a reason', () => {
+  const { plugin } = loadPlugin()
+  const { applyPlan } = plugin.__test
+  const configured = { role: 'resolve', text: 'anthropic/sonnet#high' }
+  const inherited = { role: 'default', text: 'inherit' }
+
+  assert.deepEqual(applyPlan(configured, 'ollama/lumi-4b', 'profile'), { command: '/egm model set resolve ollama/lumi-4b' })
+  assert.deepEqual(applyPlan(configured, '', 'profile'), { command: '/egm model set resolve anthropic/sonnet#high' }, 'an untouched row applies what it shows')
+  assert.deepEqual(applyPlan(configured, 'x/y', 'session'), { command: '/egm model set resolve x/y --session' })
+  assert.match(applyPlan(inherited, '', 'profile').error, /route is required/u)
+  assert.match(applyPlan({ role: 'default', text: 'inherit' }, '   ').error, /route is required/u)
+})
+
 test('the tree merges the fold, the catalog and the session store', () => {
   const { plugin } = loadPlugin()
   const { mergeChildren } = plugin.__test
