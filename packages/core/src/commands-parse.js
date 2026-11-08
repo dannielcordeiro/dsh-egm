@@ -151,7 +151,7 @@ function parseModel(positional, flags) {
     }
     case 'set': {
       const role = normalizeRole(rest[0] ?? '')
-      if (role === undefined) return { kind: 'error', error: `unknown role "${rest[0] ?? ''}"` }
+      if (role === undefined) return { kind: 'error', error: `unknown role "${rest[0] ?? ''}"; try elephant, default, a phase (brainstorm, draft, review, resolve, bootstrap, drift), or a reviewer persona such as design_critic` }
       const value = rest[1]
       if (value === undefined) return { kind: 'error', error: 'usage: /egm model set <role> <provider/model#effort|inherit>' }
       const scope = flags.has('session') ? 'session' : 'profile'
@@ -166,7 +166,7 @@ function parseModel(positional, flags) {
     }
     case 'reset': {
       const role = normalizeRole(rest[0] ?? '')
-      if (role === undefined) return { kind: 'error', error: `unknown role "${rest[0] ?? ''}"` }
+      if (role === undefined) return { kind: 'error', error: `unknown role "${rest[0] ?? ''}"; try elephant, default, a phase (brainstorm, draft, review, resolve, bootstrap, drift), or a reviewer persona such as design_critic` }
       const scope = flags.has('session') ? 'session' : 'profile'
       return { kind: 'model-reset', role, scope }
     }

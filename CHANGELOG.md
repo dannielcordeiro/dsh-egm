@@ -39,6 +39,14 @@
 - Opening from a chat row whose slot omits the session id reuses the session the
   chip published.
 
+**Configuration tab**
+
+- `default`, `reviewer`, `reviewers`, `any`, `todos` and `padrao` all address the
+  catch-all reviewer role; the parser's refusal now lists the accepted kinds.
+- The route field shows the effective route and Apply sends what the screen shows;
+  before, an untouched row sent an empty draft and did nothing.
+- Apply/This session are disabled while the field is empty.
+
 **Repository**
 
 - The browser bundle is generated from ordered parts by

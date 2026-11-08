@@ -662,10 +662,13 @@ window.__ModuleLoader__.load({
       if (routes === null) return h('div', { className: 'egm-empty' }, t('loading'))
       const roles = routes.roles ?? []
       const providerModels = catalogue?.models ?? []
+      // The field shows the effective route until the user types over it, so an
+      // Apply on an untouched row sends what the screen shows instead of nothing.
       const draftOf = (role) => drafts[role] ?? ''
+      const visibleOf = (entry) => draftOf(entry.role) || (entry.text === 'inherit' ? '' : entry.text)
       const setDraft = (role, value) => setDrafts({ ...drafts, [role]: value })
-      const apply = async (role, scope) => {
-        const value = draftOf(role).trim()
+      const apply = async (entry, scope) => {
+        const value = visibleOf(entry).trim()
         if (value === '') return
         await act(`/egm model set ${role} ${value}${scope === 'session' ? ' --session' : ''}`, () => {
           setDrafts({ ...drafts, [role]: '' })
@@ -687,15 +690,16 @@ window.__ModuleLoader__.load({
           h('span', { className: 'egm-role', title: role.role }, role.role),
           h('input', {
             className: 'egm-input',
-            value: role.text === 'inherit' ? draftOf(role.role) : draftOf(role.role) || role.text,
-            placeholder: role.text === 'inherit' ? 'provider/model#effort' : role.text,
+            value: visibleOf(role),
+            placeholder: 'provider/model#effort',
+            title: visibleOf(role) === '' ? t('inherited') : visibleOf(role),
             onChange: (event) => setDraft(role.role, event.target.value),
             'aria-label': `${role.role} route`,
             list: providerModels.length === 0 ? undefined : 'egm-route-list',
           }),
           h('span', { className: 'egm-src', title: `${t('source')}: ${role.source}` }, role.text),
-          h('button', { type: 'button', className: 'egm-btn primary', disabled: busy, onClick: () => void apply(role.role, 'profile') }, t('configApply')),
-          h('button', { type: 'button', className: 'egm-btn', disabled: busy, onClick: () => void apply(role.role, 'session') }, t('configApplySession')),
+          h('button', { type: 'button', className: 'egm-btn primary', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'profile') }, t('configApply')),
+          h('button', { type: 'button', className: 'egm-btn', disabled: busy || visibleOf(role) === '', onClick: () => void apply(role, 'session') }, t('configApplySession')),
           h('button', {
             type: 'button',
             className: 'egm-btn',

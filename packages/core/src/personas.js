@@ -38,6 +38,13 @@ const ROLE_ALIASES = Object.freeze({
   editor: 'style',
   naive: 'comprehension',
   reader: 'comprehension',
+  // The catch-all reviewer: people type all of these.
+  reviewer: 'default',
+  reviewers: 'default',
+  'any-reviewer': 'default',
+  any: 'default',
+  todos: 'default',
+  padrao: 'default',
 })
 
 /** Roles that are not personas: they name a phase or a non-reviewer actor. */

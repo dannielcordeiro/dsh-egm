@@ -44,8 +44,18 @@ test('inherit is a session statement, a profile reset otherwise', () => {
   assert.equal(profile.scope, 'profile')
 })
 
+test('the catch-all reviewer accepts the spellings people type', () => {
+  for (const spelling of ['default', 'reviewer', 'reviewers', 'any', 'padrao']) {
+    const parsed = parseEgmCommand('egm', `model set ${spelling} ollama/lumi-4b`)
+    assert.equal(parsed.kind, 'model-set', spelling)
+    assert.equal(parsed.role, 'default', spelling)
+  }
+})
+
 test('unknown roles and bad routes are errors', () => {
-  assert.equal(parseEgmCommand('egm', 'model set nobody a/b').kind, 'error')
+  const unknown = parseEgmCommand('egm', 'model set nobody a/b')
+  assert.equal(unknown.kind, 'error')
+  assert.match(unknown.error, /try elephant, default/u)
   assert.equal(parseEgmCommand('egm', 'model set elephant nonsense').kind, 'error')
   assert.equal(parseEgmCommand('egm', 'model set elephant').kind, 'error')
 })
