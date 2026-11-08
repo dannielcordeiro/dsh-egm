@@ -15,6 +15,10 @@
  *   live.js       route, status and tokens of the children this process started
  *   commands.js   `/egm`, shared by both surfaces
  *   persist.js    writing the profile layer through the configuration editor
+ *   phase-router.js  applies a phase route when an EGM skill starts
+ *   services.js   service lookup and "run when this service arrives"
+ *   guard.js      the read-only guard, mounted inside the reviewer preset
+ *   commands-parse.js  the `/egm` grammar, shared with the projection
  *   doctor.js     the checks behind `/egm doctor`
  *   tui.js        the terminal surfaces, all optional
  *
@@ -29,6 +33,7 @@ import { PROJECTION_KEY, createView, initState, applyEvent, stateSchema, viewSch
 import { loadSkills } from './skills.js'
 import { registerEgmTools, cwdOf } from './reviewer.js'
 import { registerEgmCommand } from './commands.js'
+import { installPhaseRouting } from './phase-router.js'
 import { ProfileWriter } from './persist.js'
 import { registerTui } from './tui.js'
 import { listRoutes } from './catalog.js'
@@ -134,6 +139,11 @@ export function apply(ctx, raw) {
     deps.commands = commands
     registerEgmCommand(ctx, deps)
   })
+
+  // ---- phase routing --------------------------------------------------------
+  // Host-enforced: an EGM skill starting in the log applies that phase's route,
+  // independent of whether the model remembered to call `egm_begin`.
+  installPhaseRouting(ctx, deps)
 
   // ---- terminal surfaces ----------------------------------------------------
   tui = registerTui(ctx, deps)

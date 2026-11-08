@@ -75,8 +75,21 @@ export async function runDoctor(deps, { agent, cwd } = {}) {
   const llm = service(ctx, 'llm')
   const { providers } = await listRoutes(llm)
   if (providers.length === 0) add('llm', false, 'no LLM provider is registered', 'compose an LLM adapter such as @deepseek-ai/dsh-llm-pi-ai')
+  // A provider without credentials is only a problem when something routes to
+  // it: failing the whole report because an unused route exists buries the
+  // checks that do matter.
+  const configured = router.describe({ roles: rolesToCheck(), cwd, agent })
+  const usedProviders = new Set(configured.filter((role) => role.route !== null).map((role) => role.route.provider))
   for (const provider of providers) {
-    add(`provider:${provider.id}`, provider.available, provider.available ? 'catalogue available' : provider.error ?? 'no models', provider.available ? undefined : 'add credentials for this provider')
+    if (provider.available) {
+      add(`provider:${provider.id}`, true, 'catalogue available')
+      continue
+    }
+    if (usedProviders.has(provider.id)) {
+      add(`provider:${provider.id}`, false, `${provider.error ?? 'no models'}; a configured route uses this provider`, 'add credentials, or point that route at another provider')
+    } else {
+      add(`provider:${provider.id}`, true, `no catalogue (${provider.error ?? 'no models'}), but no configured route uses it`)
+    }
   }
 
   const workspaceState = cwd === undefined ? { problems: [] } : workspace.read(cwd)
