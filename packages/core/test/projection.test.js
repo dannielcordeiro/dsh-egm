@@ -91,6 +91,14 @@ test('a reviewer is paired with the catalogue entry that carries its label', () 
   })
 })
 
+test('the role is derived from the Persona line when the argument omits it', () => {
+  const state = fold([
+    { type: 'tool/call', data: { callId: 't1', name: 'egm_reviewer', arguments: JSON.stringify({ description: 'Zoom out', prompt: 'Persona: /pkg/vendor/agents/zoom_out.md\nMode: REVIEW' }) } },
+    { type: 'subagent/catalog', data: { childId: 'child-1', label: 'Zoom out' } },
+  ])
+  assert.equal(state.children['child-1'].role, 'zoom_out')
+})
+
 test('a child with no matching call is kept as a generic subagent', () => {
   const state = fold([
     { type: 'subagent/catalog', data: { childId: 'child-2', label: 'Research task' } },

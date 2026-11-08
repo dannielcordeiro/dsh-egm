@@ -14,6 +14,7 @@
  */
 import { parseEgmCommand } from './commands-parse.js'
 import { routeKey } from './catalog.js'
+import { normalizeRole, roleFromPrompt } from './personas.js'
 
 /** Projection key: the Client reads `useProjection(PROJECTION_KEY)`. */
 export const PROJECTION_KEY = 'egmRun'
@@ -118,6 +119,10 @@ export function applyEvent(state, event) {
       const name = String(data.name ?? '')
       if (name === 'egm_reviewer' || name === 'egm_worker') {
         const args = parseArguments(data.arguments)
+        // The role is usually named by the `Persona:` line rather than the
+        // argument, so the log alone is enough to label the child.
+        const declared = typeof args.role === 'string' ? normalizeRole(args.role) : undefined
+        const role = declared ?? (typeof args.prompt === 'string' ? roleFromPrompt(args.prompt) : undefined)
         return {
           ...state,
           pendingActivation: [
@@ -126,7 +131,7 @@ export function applyEvent(state, event) {
               callId: String(data.callId ?? ''),
               kind: name === 'egm_worker' ? 'worker' : 'reviewer',
               label: typeof args.description === 'string' ? args.description : undefined,
-              role: typeof args.role === 'string' ? args.role : undefined,
+              role,
               stage: args.stage === undefined || args.stage === null ? undefined : String(args.stage),
             },
           ],
