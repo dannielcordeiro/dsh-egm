@@ -259,7 +259,7 @@ function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalo
         type: 'button',
         className: 'egm-btn',
         disabled: busy,
-        onClick: () => void act(`/egm model test ${role.role}`),
+        onClick: () => void act(testCommand(role, visibleOf(role))),
       }, t('configTest')))),
     providerModels.length === 0 ? null : h('datalist', { id: 'egm-route-list' },
       ...providerModels.map((model) => h('option', { key: model.key, value: model.key }))),

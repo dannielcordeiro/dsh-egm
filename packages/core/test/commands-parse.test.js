@@ -52,6 +52,14 @@ test('the catch-all reviewer accepts the spellings people type', () => {
   }
 })
 
+test('a phase is addressable as a role', () => {
+  for (const phase of ['brainstorm', 'draft', 'review', 'resolve', 'bootstrap', 'drift']) {
+    const parsed = parseEgmCommand('egm', `model set ${phase} ollama/lumi-4b`)
+    assert.equal(parsed.kind, 'model-set', phase)
+    assert.equal(parsed.role, phase, phase)
+  }
+})
+
 test('unknown roles and bad routes are errors', () => {
   const unknown = parseEgmCommand('egm', 'model set nobody a/b')
   assert.equal(unknown.kind, 'error')

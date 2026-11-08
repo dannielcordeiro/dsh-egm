@@ -35,6 +35,9 @@ test('role spellings collapse to the persona stem', () => {
   assert.equal(normalizeRole('readiness'), 'implementation_readiness')
   assert.equal(normalizeRole('elephant'), 'elephant')
   assert.equal(normalizeRole('default'), 'default')
+  for (const phase of ['brainstorm', 'draft', 'review', 'resolve', 'bootstrap', 'drift']) {
+    assert.equal(normalizeRole(phase), phase, `${phase} is a configurable role`)
+  }
   assert.equal(normalizeRole('reviewer'), 'default')
   assert.equal(normalizeRole('reviewers'), 'default')
   assert.equal(normalizeRole('any'), 'default')

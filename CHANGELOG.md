@@ -46,6 +46,11 @@
 - The route field shows the effective route and Apply sends what the screen shows;
   before, an untouched row sent an empty draft and did nothing.
 - Apply/This session are disabled while the field is empty.
+- Phase names are roles: `brainstorm`, `draft`, `review`, `resolve`, `bootstrap` and
+  `drift` are accepted wherever a role is named. Before, every phase row failed
+  with `unknown role "<phase>"`, which is what Test hit first.
+- Test targets the typed route when the field holds one (`provider/model`), and the
+  role's current route otherwise.
 - The command line is built by a tested helper: the row object was being
   interpolated, so every Apply sent `/egm model set [object Object] …` and the
   host answered "unknown role".

@@ -290,6 +290,22 @@ window.__ModuleLoader__.load({
       return `/egm model set ${name} ${route}${scope === 'session' ? ' --session' : ''}`
     }
 
+    /**
+     * Build the `/egm model test` line for one row.
+     *
+     * When the field holds a route (it contains a slash) the test targets that exact
+     * route, so a value can be checked before it is written; otherwise it tests
+     * whatever the role resolves to now.
+     * @param {string|{role: string}} role role name or row.
+     * @param {string} [value] route text currently shown in the row.
+     */
+    function testCommand(role, value) {
+      const name = typeof role === 'string' ? role : role?.role
+      if (typeof name !== 'string' || name === '') throw new Error('a role name is required')
+      const route = String(value ?? '').trim()
+      return route.includes('/') ? `/egm model test ${route}` : `/egm model test ${name}`
+    }
+
     /** Display name for the merge, used by the tests and the window. */
     const buildRuns = mergeChildren
 
@@ -727,7 +743,7 @@ window.__ModuleLoader__.load({
             type: 'button',
             className: 'egm-btn',
             disabled: busy,
-            onClick: () => void act(`/egm model test ${role.role}`),
+            onClick: () => void act(testCommand(role, visibleOf(role))),
           }, t('configTest')))),
         providerModels.length === 0 ? null : h('datalist', { id: 'egm-route-list' },
           ...providerModels.map((model) => h('option', { key: model.key, value: model.key }))),
@@ -1010,6 +1026,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand } }
+    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand } }
   },
 })

@@ -514,6 +514,19 @@ test('the /egm command answers routes, status and doctor as text and JSON', asyn
   }
 })
 
+test('a phase route is written under routing.phases', async () => {
+  const root = await project()
+  try {
+    const writes = []
+    const host = fakeHost({ editConfig: async (entry, mutate) => { writes.push(mutate({ routing: {} })); return {} } })
+    const result = await host.commands[0].handler({ agent: host.parentAgent(root), rawInput: 'model set resolve beta/small' })
+    assert.equal(result.kind, 'success')
+    assert.deepEqual(writes[0].routing.phases.resolve, { provider: 'beta', model: 'small' })
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('the command writes the profile through the configuration editor', async () => {
   const root = await project()
   try {

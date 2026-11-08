@@ -156,6 +156,15 @@ test('a route command names the role, never the row object', () => {
   assert.throws(() => routeCommand(row, '   '), /route is required/u)
 })
 
+test('the test command targets the typed route when there is one', () => {
+  const { plugin } = loadPlugin()
+  const { testCommand } = plugin.__test
+  assert.equal(testCommand({ role: 'resolve' }, ''), '/egm model test resolve')
+  assert.equal(testCommand({ role: 'resolve' }, 'inherit'), '/egm model test resolve')
+  assert.equal(testCommand({ role: 'resolve' }, 'anthropic/sonnet#high'), '/egm model test anthropic/sonnet#high')
+  assert.throws(() => testCommand(undefined, ''), /role name/u)
+})
+
 test('the tree merges the fold, the catalog and the session store', () => {
   const { plugin } = loadPlugin()
   const { mergeChildren } = plugin.__test

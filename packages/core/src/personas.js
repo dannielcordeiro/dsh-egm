@@ -50,6 +50,14 @@ const ROLE_ALIASES = Object.freeze({
 /** Roles that are not personas: they name a phase or a non-reviewer actor. */
 export const ACTOR_ROLES = Object.freeze(['elephant', 'worker', 'default'])
 
+/**
+ * The EGM phases a model can be configured for.
+ *
+ * Kept here, next to the role vocabulary, so `normalizeRole` recognises a phase
+ * name: a configuration row for `resolve` used to be rejected as an unknown role.
+ */
+export const PHASE_ROLES = Object.freeze(['brainstorm', 'draft', 'review', 'resolve', 'bootstrap', 'drift'])
+
 let cache
 
 /** Parse the two frontmatter keys a persona needs. */
@@ -107,6 +115,7 @@ export function normalizeRole(value) {
   const raw = value.trim().toLowerCase()
   if (raw === '') return undefined
   if (ACTOR_ROLES.includes(raw)) return raw
+  if (PHASE_ROLES.includes(raw)) return raw
   const hyphenated = raw.replaceAll('_', '-')
   const candidates = [raw, hyphenated]
   for (const candidate of candidates) {

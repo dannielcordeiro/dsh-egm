@@ -105,6 +105,22 @@ function routeCommand(role, value, scope) {
   return `/egm model set ${name} ${route}${scope === 'session' ? ' --session' : ''}`
 }
 
+/**
+ * Build the `/egm model test` line for one row.
+ *
+ * When the field holds a route (it contains a slash) the test targets that exact
+ * route, so a value can be checked before it is written; otherwise it tests
+ * whatever the role resolves to now.
+ * @param {string|{role: string}} role role name or row.
+ * @param {string} [value] route text currently shown in the row.
+ */
+function testCommand(role, value) {
+  const name = typeof role === 'string' ? role : role?.role
+  if (typeof name !== 'string' || name === '') throw new Error('a role name is required')
+  const route = String(value ?? '').trim()
+  return route.includes('/') ? `/egm model test ${route}` : `/egm model test ${name}`
+}
+
 /** Display name for the merge, used by the tests and the window. */
 const buildRuns = mergeChildren
 

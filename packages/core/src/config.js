@@ -7,10 +7,10 @@
  * alias for `reasoningEffort` because that is the word the terminal UI uses.
  */
 import z from '@deepseek-ai/schemastery'
-import { normalizeRole, reviewerRoles } from './personas.js'
+import { PHASE_ROLES, normalizeRole, reviewerRoles } from './personas.js'
 
 /** The EGM phases a user can route independently. */
-export const PHASES = Object.freeze(['brainstorm', 'draft', 'review', 'resolve', 'bootstrap', 'drift'])
+export const PHASES = PHASE_ROLES
 
 /** Policies for the child's output-token limit when its route differs from the parent. */
 export const MAX_TOKEN_POLICIES = Object.freeze(['model-default', 'inherit', 'fixed'])
