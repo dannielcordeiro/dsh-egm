@@ -88,6 +88,15 @@ run — and the user would have no way to tell which. So:
 - when the terminal delivers `/egm-review`, it logs a `command/run` named `egm-review`, which the
   projection already folds into the phase, so the run view learns the phase from either surface.
 
+## Why the browser never calls a command
+
+A command result is appended to the session as `command/done` and rendered as a local transcript block.
+Polling `/egm report --json` from a surface therefore floods the conversation and the host log — one open
+browser session produced hundreds of multi-kilobyte entries. The browser half is read-only by
+construction: it renders the `egmRun` projection, and every change goes through `/egm …`, typed by the
+human, exactly as in the terminal. `packages/ui/test/client.test.js` fails if the bundle ever references
+`remote.commands.execute` or a polling timer.
+
 ## Terminal surfaces
 
 `tuiStatus.setField`, `tuiPanels.register`, `tuiCommandTrees.register`, `tuiSettingsSections.register` and

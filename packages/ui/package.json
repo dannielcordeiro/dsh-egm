@@ -11,7 +11,12 @@
     "url": "git+ssh://git@github.com/dannielcordeiro/dsh-egm.git",
     "directory": "packages/ui"
   },
-  "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "egm"],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "egm"
+  ],
   "exports": {
     ".": "./index.js",
     "./client": "./src/client.js",
@@ -19,7 +24,14 @@
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
-  "files": ["index.js", "src", "cordis.patch.yml", "locale", "icon.svg", "README.md"],
+  "files": [
+    "index.js",
+    "src",
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg",
+    "README.md"
+  ],
   "engines": {
     "dsh": ">=0.2.1-rc.5 <0.3.0",
     "node": ">=22 <25"
@@ -33,7 +45,6 @@
       "immediately": true,
       "inject": [
         "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-tool"

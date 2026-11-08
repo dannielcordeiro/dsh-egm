@@ -47,7 +47,7 @@ test('the client bundle registers itself under the package name', async () => {
     if (id === 'react') return React
     throw new Error(`unexpected require(${id})`)
   })
-  assert.deepEqual(plugin.inject, ['slots', 'remote', 'remote.commands', 'locale'])
+  assert.deepEqual(plugin.inject, ['slots', 'locale'])
 
   const registrations = []
   const injected = []
@@ -63,7 +63,6 @@ test('the client bundle registers itself under the package name', async () => {
         return () => {}
       },
     },
-    remote: { commands: { execute: async () => ({ ok: true, value: { result: { kind: 'success', text: '{}' } } }) } },
     effect: (fn) => fn(),
   }
   plugin.apply(ctx)
@@ -77,8 +76,7 @@ test('the client bundle registers itself under the package name', async () => {
   const chip = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'conversation.input.right')
   assert.equal(chip.options.id, 'egm-run')
   assert.equal(typeof chip.component, 'function')
-  const props = chip.options.inject('session-1')
-  assert.equal(props.run.sessionId, 'session-1')
+  assert.equal(chip.options.inject, undefined, 'the chip needs no session: it reads the projection')
 
   const card = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'tool.call.toolview')
   assert.equal(card.options.key, 'egm_reviewer')
@@ -86,6 +84,13 @@ test('the client bundle registers itself under the package name', async () => {
   const section = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'settings.section')
   assert.equal(section.options.id, 'egm')
   assert.deepEqual(injected, ['conversation.input.right'])
+
+  // The browser half must never poll a command: a command result is appended to
+  // the session transcript, and polling one floods the chat and the host log.
+  const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
+  assert.equal(bundle.includes('remote.commands.execute'), false)
+  assert.equal(bundle.includes('setInterval'), false)
+  assert.ok(bundle.includes('useProjection'))
 })
 
 test('the manifest declares a web-only client half with one host entry', () => {

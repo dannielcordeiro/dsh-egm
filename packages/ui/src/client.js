@@ -12,8 +12,9 @@
  * reviewer card, settings page) rather than separate files.
  *
  * Surfaces:
- *   - a composer chip with the phase, the routes and the children of this run,
- *     refreshed from `/egm report --json` while something is running;
+ *   - a composer chip with the phase, the stages and the children of this run,
+ *     read from the `egmRun` projection (never from a command: a command result
+ *     is appended to the session transcript, so polling one floods the chat);
  *   - a compact card for every `egm_reviewer` result;
  *   - an EGM page under Settings that explains where routes live and how to
  *     change them without leaving the keyboard.
@@ -77,9 +78,9 @@ window.__ModuleLoader__.load({
         routes: 'Routes',
         artifacts: 'Artifacts',
         tokens: 'tokens',
-        refresh: 'Refresh',
-        doctor: 'Doctor',
         close: 'Close',
+        noProjection: 'This session publishes no EGM run projection.',
+        typeForActions: 'Use /egm in the composer to change anything.',
         open: 'Open',
         inherited: 'inherited',
         error: 'Could not read the run',
@@ -109,9 +110,9 @@ window.__ModuleLoader__.load({
         routes: 'Rotas',
         artifacts: 'Artefatos',
         tokens: 'tokens',
-        refresh: 'Atualizar',
-        doctor: 'Doctor',
         close: 'Fechar',
+        noProjection: 'Esta sessão não publica a projeção da run EGM.',
+        typeForActions: 'Use /egm no compositor para alterar algo.',
         open: 'Abrir',
         inherited: 'herdada',
         error: 'Não foi possível ler a run',
@@ -141,24 +142,8 @@ window.__ModuleLoader__.load({
 
     // ---- helpers ------------------------------------------------------------
 
-    /** Run one `/egm …` line in this session and return the parsed JSON payload. */
-    async function runCommand(remote, sessionId, line) {
-      const result = await remote.commands.execute(sessionId, line, [])
-      if (!result.ok) throw new Error(result.error?.message ?? result.error?.code ?? 'command failed')
-      const value = result.value?.result
-      if (value === undefined) throw new Error('command returned nothing')
-      if (value.kind === 'error') throw new Error(value.text)
-      return value.text
-    }
-
-    async function runJson(remote, sessionId, line) {
-      const text = await runCommand(remote, sessionId, line)
-      try {
-        return JSON.parse(text)
-      } catch {
-        throw new Error('the host returned a non-JSON payload')
-      }
-    }
+    /** The projection key the host publishes the run under. */
+    const PROJECTION_KEY = 'egmRun'
 
     const STAGE_GLYPH = { done: '✓', running: '◐', idle: '·' }
     const STATUS_GLYPH = { settled: '✓', failed: '✗', running: '◐', started: '◐' }
@@ -191,41 +176,15 @@ window.__ModuleLoader__.load({
 
     // ---- chip ---------------------------------------------------------------
 
-    function Chip({ t, run }) {
+    function Chip({ t, useProjection }) {
       const [open, setOpen] = useState(false)
-      const [data, setData] = useState(null)
-      const [error, setError] = useState(null)
-      const [busy, setBusy] = useState(false)
       const wrapRef = useRef(null)
-      const alive = useRef(true)
-      const refresh = useRef(async () => {})
-
-      useEffect(() => () => {
-        alive.current = false
-      }, [])
-
-      const load = useCallback(async () => {
-        try {
-          const payload = await runJson(run.remote, run.sessionId, '/egm report --json')
-          if (!alive.current) return
-          setData(payload)
-          setError(null)
-        } catch (failure) {
-          if (!alive.current) return
-          setError(failure instanceof Error ? failure.message : String(failure))
-        }
-      }, [run.remote, run.sessionId])
-
-      refresh.current = load
-
-      useEffect(() => {
-        void load()
-        const timer = setInterval(() => {
-          const busyNow = (data?.report?.children ?? []).some((child) => child.status === 'running')
-          if (open || busyNow) void load()
-        }, open ? 2500 : 8000)
-        return () => clearInterval(timer)
-      }, [load, open, data])
+      const view = typeof useProjection === 'function' ? useProjection(PROJECTION_KEY) : undefined
+      const report = view ?? { phase: null, stages: [], children: [], artifacts: [] }
+      const children = Array.isArray(report.children) ? report.children : []
+      const running = children.filter((child) => child.status === 'running').length
+      const phase = report.phase ?? null
+      const elephant = report.elephantKey ?? null
 
       useEffect(() => {
         if (!open) return undefined
@@ -243,26 +202,6 @@ window.__ModuleLoader__.load({
         }
       }, [open])
 
-      const act = useCallback(async (line) => {
-        setBusy(true)
-        try {
-          await runCommand(run.remote, run.sessionId, line)
-          await load()
-        } catch (failure) {
-          setError(failure instanceof Error ? failure.message : String(failure))
-        } finally {
-          if (alive.current) setBusy(false)
-        }
-      }, [run.remote, run.sessionId, load])
-
-      const report = data?.report
-      const roles = data?.routes?.roles ?? []
-      const children = report?.children ?? []
-      const running = children.filter((child) => child.status === 'running').length
-      const phase = report?.phase ?? null
-      const elephant = roles.find((role) => role.role === 'elephant')
-      const configured = roles.filter((role) => role.text !== 'inherit')
-
       return h('div', { style: { position: 'relative', display: 'inline-flex', alignItems: 'center' } },
         h('style', null, CSS),
         h('button', {
@@ -271,7 +210,7 @@ window.__ModuleLoader__.load({
           'data-running': running > 0,
           'aria-expanded': open,
           'aria-label': `${t('chipTitle')}: ${phase ?? t('noPhase')}`,
-          title: `${t('chipTitle')} · ${phase ?? t('noPhase')} · ${elephant === undefined ? t('inherited') : shortRoute(elephant.route)}`,
+          title: `${t('chipTitle')} · ${phase ?? t('noPhase')} · ${elephant ?? t('inherited')}`,
           onClick: () => setOpen((value) => !value),
         },
           h('span', { className: 'egm-dot', 'data-running': running > 0, 'aria-hidden': true }),
@@ -280,14 +219,14 @@ window.__ModuleLoader__.load({
           h('div', { className: 'egm-head' },
             h('span', null, `🐘 ${t('chipTitle')}`),
             h('span', { className: 'egm-sub' }, phase === null ? t('noPhase') : `${t('phase')}: ${phase}`)),
-          error === null ? null : h('div', { className: 'egm-error', role: 'alert' }, `${t('error')}: ${error}`),
+          typeof useProjection !== 'function'
+            ? h('div', { className: 'egm-empty' }, t('noProjection'))
+            : null,
 
           h('div', { className: 'egm-section' },
             h('div', { className: 'egm-label' }, t('elephant')),
             h('div', { className: 'egm-row' },
-              h('span', { className: 'egm-route' }, elephant === undefined ? '—' : elephant.text),
-              h('span', { className: 'egm-src' }, elephant?.source ?? t('inherited')))),
-            configured.length === 0 ? null : h('div', { className: 'egm-label' }, `${t('routes')} (${configured.length})`),
+              h('span', { className: 'egm-route' }, elephant ?? '—'))),
 
           h('div', { className: 'egm-section' },
             h('div', { className: 'egm-label' }, t('reviewers')),
@@ -299,7 +238,7 @@ window.__ModuleLoader__.load({
             children.length === 0 ? null : h('div', { className: 'egm-sub' },
               `${children.filter((child) => child.status === 'settled').length}/${children.length} ✓ · ${running} ${t('running')}`),
 
-          (report?.artifacts ?? []).length === 0 ? null : h('div', { className: 'egm-section' },
+          (report.artifacts ?? []).length === 0 ? null : h('div', { className: 'egm-section' },
             h('div', { className: 'egm-label' }, t('artifacts')),
             ...report.artifacts.slice(-4).map((artifact) => h('div', { className: 'egm-row', key: artifact.path },
               h('span', { className: 'egm-role' }, artifact.kind),
@@ -307,18 +246,14 @@ window.__ModuleLoader__.load({
 
           h('div', { className: 'egm-row', style: { gap: '6px', flexWrap: 'wrap' } },
             ...STAGE_IDS.map((stage) => {
-              const entry = (report?.stages ?? []).find((item) => item.stage === stage) ?? { status: 'idle', reviewers: 0 }
+              const entry = (report.stages ?? []).find((item) => item.stage === stage) ?? { status: 'idle', reviewers: 0 }
               return h('span', { className: 'egm-badge', key: stage, title: `${t('stage')} ${stage}: ${entry.status}` },
                 `${STAGE_GLYPH[entry.status] ?? '·'} ${stage}${entry.reviewers === 0 ? '' : `·${entry.reviewers}`}`)
             })),
 
-          (data?.workspace?.problems ?? []).length === 0 ? null : h('div', { className: 'egm-error' },
-            ...data.workspace.problems.map((problem) => h('div', { key: problem }, problem))),
-
           h('div', { className: 'egm-actions' },
-            h('button', { type: 'button', className: 'egm-btn primary', disabled: busy, onClick: () => void act('/egm doctor') }, t('doctor')),
-            h('button', { type: 'button', className: 'egm-btn', disabled: busy, onClick: () => void load() }, t('refresh')),
-            h('button', { type: 'button', className: 'egm-btn', onClick: () => setOpen(false) }, t('close'))))
+            h('button', { type: 'button', className: 'egm-btn', onClick: () => setOpen(false) }, t('close')),
+            h('span', { className: 'egm-sub' }, t('typeForActions'))))
           : null)
     }
 
@@ -370,7 +305,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['slots', 'remote', 'remote.commands', 'locale'],
+      inject: ['slots', 'locale'],
       apply(ctx) {
         const disposeLocale = ctx.locale.register(NS, DICT)
         if (typeof disposeLocale === 'function') ctx.effect(() => disposeLocale)
@@ -382,7 +317,6 @@ window.__ModuleLoader__.load({
           order: 25,
           locale: NS,
           label: () => 'EGM',
-          inject: (sessionId) => ({ run: { remote: ctx.remote, sessionId } }),
         }, Chip))
 
         // Compact card for a reviewer activation.
