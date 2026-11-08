@@ -38,8 +38,11 @@ Current result: **115 tests in `packages/core`, 4 in `packages/ui`, all passing*
 
 ## Not yet verified
 
-- **A live reviewer on a routed model.** The running terminal process still holds the module graph it
-  loaded before this install, so a reviewer started from it executes the pre-install code. After a restart,
+- **A live reviewer on a routed model.** Three attempts from the process that was already running when the
+  package was installed fail with `dsh-egm reviewer isolation failed: cannot get property "guard" without
+  inject` — the exact text of the superseded guard probe, which no longer exists in the source. That is
+  direct evidence the process is executing the module graph it loaded before the install, not the tree in
+  this repository, and it is why the check below needs a restart. After a restart,
   run this and confirm the child log names the routed provider and model:
 
   ```text
