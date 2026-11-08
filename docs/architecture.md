@@ -88,6 +88,25 @@ run — and the user would have no way to tell which. So:
 - when the terminal delivers `/egm-review`, it logs a `command/run` named `egm-review`, which the
   projection already folds into the phase, so the run view learns the phase from either surface.
 
+## The browser window and its data
+
+`shell.overlay` hosts one modal with four tabs. Three sources are merged by id, because none is sufficient
+alone:
+
+| Source | Gives |
+| --- | --- |
+| `egmRun` (this package) | phase, stages, role and stage per child, artifacts, overrides |
+| `subagentCatalog` (host) | label and the route a child was created with, for every child, including plain `subagent` runs |
+| `ctx.get('sessions').list` (client store) | live `running`, `subagentTiming`, `tokenUsage` per session |
+
+A child started by the generic delegation tool has no role in our fold; a running child has no status in the
+log; a cold session has no catalog. Merging them is what stops the window from claiming "not started" while
+a reviewer is working.
+
+The client bundle is generated: `packages/ui/src/client/*.js` are ordered fragments sharing one closure, and
+`scripts/bundle-client.mjs` concatenates them into the single file the Web module loader can serve. CI runs
+the bundler in `--check` mode, so the committed file cannot drift from its parts.
+
 ## Why the browser never calls a command
 
 A command result is appended to the session as `command/done` and rendered as a local transcript block.

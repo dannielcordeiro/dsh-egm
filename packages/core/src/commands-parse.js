@@ -20,6 +20,7 @@ export const EGM_USAGE = [
   '  /egm phase <brainstorm|draft|review|resolve|bootstrap|drift>',
   '  /egm stage <5-9> <running|done|idle>',
   '  /egm review preset <interactive|consolidated|feature_spec|implementation>',
+  '  /egm catalogue [--json]            providers, models and efforts the llm service offers',
   '  /egm artifacts                     files this run produced',
   '  /egm report [--json]               the whole run as a report',
   '  /egm doctor                        check the composition, credentials and files',
@@ -104,6 +105,9 @@ export function parseEgmCommand(name, rawInput) {
       return { kind: 'routes', json: flags.has('json') }
     case 'artifacts':
       return { kind: 'artifacts', json: flags.has('json') }
+    case 'catalogue':
+    case 'catalog':
+      return { kind: 'catalogue', json: flags.has('json') }
     case 'report':
       return { kind: 'report', json: flags.has('json') }
     case 'doctor':

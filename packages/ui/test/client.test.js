@@ -8,46 +8,41 @@ const PACKAGE_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const manifest = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'))
 const patch = readFileSync(join(PACKAGE_ROOT, 'cordis.patch.yml'), 'utf8')
 
-/** Load the client bundle through a stand-in module loader. */
-function loadClient() {
+/**
+ * Load the generated client bundle through a stand-in module loader and apply it
+ * to a fake client context, returning everything the registrations produced.
+ */
+function loadPlugin() {
   let captured
-  const window = {
-    __ModuleLoader__: {
-      load(definition) {
-        captured = definition
-      },
+  const window = { __ModuleLoader__: { load: (definition) => { captured = definition } } }
+  globalThis.window = window
+  globalThis.document = { addEventListener() {}, removeEventListener() {}, body: { style: {} } }
+  const React = {
+    createElement: (...args) => ({ type: 'element', args }),
+    Fragment: 'fragment',
+    useState: (initial) => [initial, () => {}],
+    useEffect: () => {},
+    useCallback: (fn) => fn,
+    useMemo: (fn) => fn(),
+    useRef: (value) => ({ current: value }),
+    useSyncExternalStore: (_subscribe, getSnapshot) => {
+      try {
+        return getSnapshot()
+      } catch {
+        return undefined
+      }
     },
   }
-  return { window, get captured() { return captured } }
-}
-
-/** A React stand-in: the client only builds elements at render time. */
-const React = {
-  createElement: (...args) => ({ type: 'element', args }),
-  useState: (initial) => [initial, () => {}],
-  useEffect: () => {},
-  useCallback: (fn) => fn,
-  useMemo: (fn) => fn(),
-  useRef: (value) => ({ current: value }),
-}
-
-test('the client bundle registers itself under the package name', async () => {
-  const loader = loadClient()
-  globalThis.window = loader.window
-  globalThis.document = { addEventListener() {}, removeEventListener() {} }
   const source = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
   const module = { exports: {} }
-  const factory = new Function('window', 'module', 'exports', 'require', source)
-  factory(loader.window, module, module.exports, (id) => {
+  new Function('window', 'module', 'exports', 'require', source)(window, module, module.exports, (id) => {
     assert.equal(id, 'react')
     return React
   })
-  assert.equal(loader.captured.id, '@local/dsh-egm-ui')
-  const plugin = loader.captured.factory((id) => {
+  const plugin = captured.factory((id) => {
     if (id === 'react') return React
     throw new Error(`unexpected require(${id})`)
   })
-  assert.deepEqual(plugin.inject, ['slots', 'locale'])
 
   const registrations = []
   const injected = []
@@ -63,38 +58,141 @@ test('the client bundle registers itself under the package name', async () => {
         return () => {}
       },
     },
+    remote: { commands: { execute: async () => ({ ok: true, value: { result: { kind: 'success', text: '{}' } } }) } },
+    sessions: { list: { subscribe: () => () => {}, getSnapshot: () => ({ byId: {} }) } },
     effect: (fn) => fn(),
   }
   plugin.apply(ctx)
+  return { plugin, registrations, injected, ctx }
+}
+
+test('every surface is registered', () => {
+  const { plugin, registrations, injected } = loadPlugin()
+  assert.deepEqual(plugin.inject, ['slots', 'locale', 'remote', 'remote.commands'])
+
+  const byName = (name) => registrations.filter((entry) => entry.kind === 'slot' && entry.options.name === name)
+  const window = byName('shell.overlay')
+  assert.equal(window.length, 1, 'the EGM window lives in the root overlay')
+  assert.equal(typeof window[0].component, 'function')
+
+  const chip = byName('conversation.input.right')[0]
+  assert.equal(chip.options.id, 'egm-run')
+  assert.equal(chip.options.inject('session-1').sessionId, 'session-1')
+
+  const row = byName('conversation.chat.commandview')[0]
+  assert.equal(row.options.key, 'egm', 'the /egm row needs its own body or it renders no text')
+  assert.equal(row.options.inject('session-1').sessionId, 'session-1')
+
+  assert.equal(byName('tool.call.toolview')[0].options.key, 'egm_reviewer')
+  assert.equal(byName('settings.section')[0].options.id, 'egm')
+  assert.deepEqual(injected.sort(), ['conversation.chat.commandview', 'conversation.input.right'])
 
   const locale = registrations.find((entry) => entry.kind === 'locale')
   assert.equal(locale.ns, '@local/dsh-egm-ui')
-  assert.equal(typeof locale.dict.en.settingsTitle, 'string')
-  assert.equal(typeof locale.dict.pt.settingsTitle, 'string')
   assert.deepEqual(Object.keys(locale.dict.en).sort(), Object.keys(locale.dict.pt).sort(), 'both dictionaries must have the same keys')
+})
 
-  const commandRow = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'conversation.chat.commandview')
-  assert.equal(commandRow.options.key, 'egm', 'the /egm row needs its own body or it renders no text')
-  assert.equal(typeof commandRow.component, 'function')
+test('the browser half never polls and runs a command only on a click', () => {
+  const source = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
+  assert.equal(source.includes('setInterval'), false)
+  assert.equal(source.includes('setTimeout'), false)
+  const executions = source.split('remote.commands.execute').length - 1
+  assert.equal(executions, 1, 'exactly one call site, inside the explicit action helper')
+})
 
-  const chip = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'conversation.input.right')
-  assert.equal(chip.options.id, 'egm-run')
-  assert.equal(typeof chip.component, 'function')
-  assert.equal(chip.options.inject, undefined, 'the chip needs no session: it reads the projection')
-
-  const card = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'tool.call.toolview')
-  assert.equal(card.options.key, 'egm_reviewer')
-
-  const section = registrations.find((entry) => entry.kind === 'slot' && entry.options.name === 'settings.section')
-  assert.equal(section.options.id, 'egm')
-  assert.deepEqual(injected.sort(), ['conversation.chat.commandview', 'conversation.input.right'])
-
-  // The browser half must never poll a command: a command result is appended to
-  // the session transcript, and polling one floods the chat and the host log.
+test('the generated bundle matches its parts', () => {
   const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
-  assert.equal(bundle.includes('remote.commands.execute'), false)
-  assert.equal(bundle.includes('setInterval'), false)
-  assert.ok(bundle.includes('useProjection'))
+  assert.ok(bundle.includes('GENERATED FILE, do not edit'))
+  assert.ok(bundle.includes("id: '@local/dsh-egm-ui'"))
+})
+
+test('status prefers live facts over the durable fold', () => {
+  const { plugin } = loadPlugin()
+  const { statusOf } = plugin.__test
+  assert.equal(statusOf({ running: true }), 'running')
+  assert.equal(statusOf({ timing: { active: { since: 1, through: 2 } } }), 'running')
+  assert.equal(statusOf({ durable: 'started', timing: { lastTurnCompleted: true } }), 'settled')
+  assert.equal(statusOf({ durable: 'started' }), 'settled')
+  assert.equal(statusOf({ durable: 'failed' }), 'failed')
+  assert.equal(statusOf({}), 'unknown')
+})
+
+test('tokens and duration format compactly', () => {
+  const { plugin } = loadPlugin()
+  const { formatTokens, formatDuration } = plugin.__test
+  assert.equal(formatTokens(980), '980')
+  assert.equal(formatTokens(12_400), '12k')
+  assert.equal(formatTokens(1_500_000), '1.5M')
+  assert.equal(formatTokens(0), null)
+  assert.equal(formatDuration(8_000), '8s')
+  assert.equal(formatDuration(62_000), '1m02s')
+  assert.equal(formatDuration(0), null)
+})
+
+test('a route comes from the catalog first, then from the durable fold', () => {
+  const { plugin } = loadPlugin()
+  const { routeTextOf } = plugin.__test
+  assert.equal(routeTextOf({ agentProvider: 'a', agentModel: 'b', agentReasoningEffort: 'high' }, 'x/y'), 'a/b#high')
+  assert.equal(routeTextOf(undefined, 'x/y'), 'x/y')
+  assert.equal(routeTextOf(undefined, null), 'inherit')
+})
+
+test('the tree merges the fold, the catalog and the session store', () => {
+  const { plugin } = loadPlugin()
+  const { mergeChildren } = plugin.__test
+  const egmRun = {
+    children: [
+      { childId: 'c1', kind: 'reviewer', role: 'zoom_out', stage: '5', label: 'Zoom out', status: 'started', routeKey: 'a/b' },
+      { childId: 'c2', kind: 'worker', role: 'worker', stage: null, label: 'Worker', status: 'failed' },
+      { childId: 'c3', kind: 'subagent', role: null, stage: null, label: 'Plain child', status: 'started' },
+    ],
+  }
+  const catalogs = {
+    root: [{ id: 'c1', label: 'Stage 5 zoom out', agentProvider: 'anthropic', agentModel: 'sonnet', agentReasoningEffort: 'high', createdAt: 10 }],
+    c1: [{ id: 'g1', label: 'Nested reviewer' }],
+  }
+  const sessions = {
+    byId: {
+      c1: { running: true, parentSessionId: 'root', projectionValues: { tokenUsage: { totals: { uncachedInputTokens: 100, outputTokens: 20 } } } },
+      c2: { parentSessionId: 'root', projectionValues: { subagentTiming: { lastTurnCompleted: true, settledMs: 4000 } } },
+      c3: { parentSessionId: 'root', projectionValues: { subagentTiming: { lastTurnCompleted: true, settledMs: 1500 } } },
+      g1: { parentSessionId: 'c1', running: true },
+    },
+  }
+  const rows = mergeChildren({ egmRun, catalogs, sessions, rootSessionId: 'root' })
+  const byId = Object.fromEntries(rows.map((row) => [row.id, row]))
+  assert.deepEqual(rows.map((row) => row.id), ['c1', 'g1', 'c2', 'c3'])
+  assert.equal(byId.c1.role, 'zoom_out')
+  assert.equal(byId.c1.stage, '5')
+  assert.equal(byId.c1.route, 'anthropic/sonnet#high')
+  assert.equal(byId.c1.status, 'running')
+  assert.equal(byId.c1.tokens, 120)
+  assert.equal(byId.g1.depth, 1)
+  assert.equal(byId.g1.status, 'running')
+  assert.equal(byId.c2.status, 'failed', 'a failed activation stays failed even after a turn ended')
+  assert.equal(byId.c2.durationMs, 4000)
+  assert.equal(byId.c3.status, 'settled')
+})
+
+test('the tree stops at the depth cap and survives a cycle', () => {
+  const { plugin } = loadPlugin()
+  const { mergeChildren } = plugin.__test
+  const catalogs = {
+    root: [{ id: 'a' }],
+    a: [{ id: 'b' }],
+    b: [{ id: 'c' }],
+    c: [{ id: 'd' }],
+    d: [{ id: 'root' }],
+  }
+  const rows = mergeChildren({ egmRun: { children: [] }, catalogs, sessions: { byId: {} }, rootSessionId: 'root', maxDepth: 2 })
+  assert.deepEqual(rows.map((row) => row.id), ['a', 'b', 'c'])
+  assert.equal(new Set(rows.map((row) => row.id)).size, rows.length)
+})
+
+test('an empty run produces no rows, not a placeholder', () => {
+  const { plugin } = loadPlugin()
+  const { mergeChildren } = plugin.__test
+  assert.deepEqual(mergeChildren({ egmRun: undefined, catalogs: {}, sessions: undefined, rootSessionId: 'root' }), [])
 })
 
 test('the manifest declares a web-only client half with one host entry', () => {

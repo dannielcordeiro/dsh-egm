@@ -82,6 +82,19 @@ export async function handleEgmCommand(deps, invocation) {
     case 'review-preset':
       deps.refresh?.(agent)
       return ok(`review preset recorded: ${parsed.preset}.`)
+    case 'catalogue': {
+      const { providers, models } = await deps.catalogue()
+      if (parsed.json) return ok(JSON.stringify({ providers, models }, null, 2))
+      if (models.length === 0) return { kind: 'error', text: 'No model is available: check /egm doctor for provider credentials.' }
+      return ok([
+        'Available routes (provider/model#effort):',
+        ...providers.map((provider) => {
+          const list = models.filter((model) => model.provider === provider.id)
+          const head = `${provider.available ? '✓' : '·'} ${provider.id}${provider.available ? '' : ` (${provider.error ?? 'no catalogue'})`}`
+          return [head, ...list.map((model) => `    ${model.key}${model.efforts.length === 0 ? '' : `  [#${model.efforts.map((effort) => effort.id).join(' #')}]`}`)].join('\n')
+        }),
+      ].join('\n'))
+    }
     case 'artifacts':
       return parsed.json ? ok(JSON.stringify(artifactsData(deps, agent), null, 2)) : ok(artifactsText(deps, agent))
     case 'report':

@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.1.0 — 2026-11-08
+
+**Window (browser)**
+
+- A full EGM window on the shell overlay, opened from the chip's "Details" and from
+  every `/egm …` chat row, with four tabs: runs, configuration, artifacts and
+  diagnostics. Escape closes it; it traps focus and never polls.
+- Runs tab: the merged tree of the Elephant's descendants (children and
+  grandchildren), each row with live status, role, stage, route, tokens and
+  duration, plus "open session" and "open beside".
+- Configuration tab: one row per role with the effective route, its provenance,
+  and Apply-to-profile / Apply-to-this-session / Clear / Test. The model catalogue
+  loads only when the button is pressed.
+- Artifacts and diagnostics tabs; the doctor report renders inside the window.
+
+**Corrections**
+
+- The chip no longer reports a stale status: live `running`, timing and tokens come
+  from the client session store, not from the plugin's in-process map, so a running
+  reviewer shows as running and settles when it ends. Generic `subagent` children
+  now appear too.
+- The tree is no longer truncated to the last eight children.
+
+**Host**
+
+- `/egm catalogue [--json]` lists providers, models and efforts for the
+  configuration tab.
+
+**Repository**
+
+- The browser bundle is generated from ordered parts by
+  `scripts/bundle-client.mjs` (`npm run build:client`); CI fails when the checked-in
+  file is stale. The client bundle now has 9 parts instead of one 900-line file.
+
 ## 1.0.0 — 2026-11-07
 
 First release of the two-package product.

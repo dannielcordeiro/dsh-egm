@@ -498,6 +498,12 @@ test('the /egm command answers routes, status and doctor as text and JSON', asyn
     const doctor = await command.handler({ agent, rawInput: 'doctor' })
     assert.match(doctor.text, /EGM doctor/u)
 
+    const catalogue = await command.handler({ agent, rawInput: 'catalogue --json' })
+    const parsedCatalogue = JSON.parse(catalogue.text)
+    assert.ok(Array.isArray(parsedCatalogue.models) && parsedCatalogue.models.length > 0)
+    assert.equal(parsedCatalogue.models[0].key, 'alpha/big')
+    assert.ok(Array.isArray(parsedCatalogue.providers))
+
     const help = await command.handler({ agent, rawInput: '' })
     assert.match(help.text, /Usage:/u)
 

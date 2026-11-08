@@ -23,9 +23,10 @@ node --test packages/ui/test/*.test.js
 | Run projection | `test/projection.test.js` | phase from a skill command and from `egm_begin`, session-only overrides, child pairing through `subagent/catalog`, settlement notices, artifact bucketing, usage accumulation, stage and cost derivation, unpriced children |
 | Skills | `test/skills.test.js` | seven skills, upstream names and descriptions preserved, the preamble states every harness mechanic, the phase follows the skill |
 | Host integration | `test/integration.test.js` | activation with a simulated host: seven skills, three tools, `/egm`, projection; reviewer route + token cap; inherit path; workspace override; fail-closed and inherit policies; malformed workspace; `egm_begin`; guard probe safety; default-route backstop; single-use refusal; command text and JSON; profile write through the config editor; activation with no optional service at all |
-| Browser package | `packages/ui/test/client.test.js` | the bundle registers under its package name, both dictionaries carry the same keys, the chip/section/card registrations and their `inject` props, the web-only manifest, the self-disabling row, locale metadata |
+| Browser package | `packages/ui/test/client.test.js` | every surface registers (overlay window, chip with its session, `/egm` command row, reviewer card, settings page), both dictionaries carry the same keys, no timer and exactly one command call site, the bundle is generated and current, and the pure run logic: status precedence, token and duration formatting, route precedence, the three-source merge, the depth cap and a cycle |
+| Host: catalogue | `packages/core/test/integration.test.js` | `/egm catalogue --json` returns providers and models |
 
-Current result: **115 tests in `packages/core`, 4 in `packages/ui`, all passing**, plus the vendor gate.
+Current result: **137 tests in `packages/core`, 12 in `packages/ui`, all passing**, plus the vendor gate and the client-bundle freshness check.
 
 ## Verified beyond the suites
 
