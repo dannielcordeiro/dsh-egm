@@ -1,0 +1,22 @@
+dsh-egm
+Copyright 2026 the dsh-egm authors
+
+This product includes software developed at Google LLC as part of
+google/elephant-goldfish-model (https://github.com/google/elephant-goldfish-model),
+redistributed unchanged under the Apache License, Version 2.0.
+
+The following paths under packages/core/vendor/ are byte-identical copies of
+that project at commit e9e1f06aa4e26e95cd4ed37210a0632202c429e9, with one
+SHA-256 recorded per file in packages/core/upstream.lock.json:
+
+  agents/*.md
+  resources/**/*.md
+  skills/*/SKILL.md
+  skills/*/references/*
+
+The DeepSeek Harness integration layer (host modules, bundle patch, reviewer
+preset, model routing, run projection, terminal and browser surfaces) is
+original work in this repository, under the same license.
+
+Elephant-Goldfish Model is a Google project; dsh-egm is an independent
+community port and is not affiliated with, endorsed by, or supported by Google.
