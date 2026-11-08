@@ -40,7 +40,7 @@ window.__ModuleLoader__.load({
 `
 
 const FOOTER = `
-    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren } }
+    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand } }
   },
 })
 `

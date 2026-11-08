@@ -88,6 +88,23 @@ function routeTextOf(catalogEntry, durableRouteKey) {
   return 'inherit'
 }
 
+/**
+ * Build the `/egm model set` line for one role row.
+ *
+ * The row is an object, so interpolating it directly produced
+ * `/egm model set [object Object] …` and the host answered "unknown role".
+ * @param {string|{role: string}} role role name or row.
+ * @param {string} value route text as typed.
+ * @param {'profile'|'session'} [scope] where to write.
+ */
+function routeCommand(role, value, scope) {
+  const name = typeof role === 'string' ? role : role?.role
+  if (typeof name !== 'string' || name === '') throw new Error('a role name is required')
+  const route = String(value ?? '').trim()
+  if (route === '') throw new Error('a route is required')
+  return `/egm model set ${name} ${route}${scope === 'session' ? ' --session' : ''}`
+}
+
 /** Display name for the merge, used by the tests and the window. */
 const buildRuns = mergeChildren
 

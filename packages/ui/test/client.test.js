@@ -144,6 +144,18 @@ test('a route comes from the catalog first, then from the durable fold', () => {
   assert.equal(routeTextOf(undefined, null), 'inherit')
 })
 
+test('a route command names the role, never the row object', () => {
+  const { plugin } = loadPlugin()
+  const { routeCommand } = plugin.__test
+  const row = { role: 'default', text: 'inherit' }
+  assert.equal(routeCommand(row, 'ollama/lumi-4b', 'profile'), '/egm model set default ollama/lumi-4b')
+  assert.equal(routeCommand(row, 'ollama/lumi-4b', 'session'), '/egm model set default ollama/lumi-4b --session')
+  assert.equal(routeCommand('design_critic', ' a/b#high '), '/egm model set design_critic a/b#high')
+  assert.equal(routeCommand(row, 'x/y').includes('[object Object]'), false)
+  assert.throws(() => routeCommand({}, 'a/b'), /role name/u)
+  assert.throws(() => routeCommand(row, '   '), /route is required/u)
+})
+
 test('the tree merges the fold, the catalog and the session store', () => {
   const { plugin } = loadPlugin()
   const { mergeChildren } = plugin.__test

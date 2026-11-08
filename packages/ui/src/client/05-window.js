@@ -219,7 +219,7 @@ function ConfigTab({ t, routes, drafts, setDrafts, busy, act, loadRoutes, catalo
   const apply = async (entry, scope) => {
     const value = visibleOf(entry).trim()
     if (value === '') return
-    await act(`/egm model set ${role} ${value}${scope === 'session' ? ' --session' : ''}`, () => {
+    await act(routeCommand(role, value, scope), () => {
       setDrafts({ ...drafts, [role]: '' })
       void loadRoutes()
     })

@@ -46,6 +46,9 @@
 - The route field shows the effective route and Apply sends what the screen shows;
   before, an untouched row sent an empty draft and did nothing.
 - Apply/This session are disabled while the field is empty.
+- The command line is built by a tested helper: the row object was being
+  interpolated, so every Apply sent `/egm model set [object Object] …` and the
+  host answered "unknown role".
 
 **Repository**
 
