@@ -116,6 +116,11 @@ A route is `provider/model` with an optional `#effort`. Three policies keep the 
 view then reports an estimated cost and counts the children it could not price instead of pretending
 they were free.
 
+The `/egm-<phase>` entries in the terminal are skills mirrored by the terminal's own skill catalogue, not
+commands registered here; the only command this package owns is `/egm`. See
+[the architecture note](docs/architecture.md#why-egm--are-skills-not-commands) for why mixing the two
+would silently break one of them.
+
 Commands: `/egm status`, `/egm routes [--json]`, `/egm model [show|set|reset|test]`, `/egm phase`,
 `/egm stage`, `/egm review preset`, `/egm artifacts`, `/egm report [--json]`, `/egm doctor`,
 `/egm workspace`. Every command answers as text and, where a screen needs it, as JSON.

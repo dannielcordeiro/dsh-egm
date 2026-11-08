@@ -70,6 +70,24 @@ A plugin cannot add forwarded events or a typert remote in plain JavaScript, so 
 projection and calls `/egm … --json` through the command channel. One code path, two surfaces,
 no private bridge.
 
+## Why `/egm-*` are skills, not commands
+
+The seven EGM entry points are registered in the Harness **skill** registry, and only one slash command
+(`/egm`) is registered by this plugin. The `/egm-<phase>` entries you see in the terminal come from the
+terminal itself: `@deepseek-harness-tui/dsh-tui` mirrors every user-invocable skill into its command
+registry (`lib/types/dsh-adapter/channel/skill-catalog.js`), with `recordInput: false`, and it skips a
+name that a command already owns (`commandService.find(target, name) !== undefined`).
+
+That is deliberate. Registering our own `/egm-review` command would collide with the mirror: one of the
+two would win silently — either the skill body would never reach the model, or the command would never
+run — and the user would have no way to tell which. So:
+
+- the skill stays the single invocation path, in the terminal and in the browser;
+- phase routing happens inside the session, through `egm_begin`, which the injected preamble asks for at
+  the start of every phase;
+- when the terminal delivers `/egm-review`, it logs a `command/run` named `egm-review`, which the
+  projection already folds into the phase, so the run view learns the phase from either surface.
+
 ## Terminal surfaces
 
 `tuiStatus.setField`, `tuiPanels.register`, `tuiCommandTrees.register`, `tuiSettingsSections.register` and
