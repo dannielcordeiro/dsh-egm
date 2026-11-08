@@ -28,6 +28,36 @@ export function service(ctx, name) {
   }
 }
 
+/**
+ * Run `callback` once a service is reachable, now or later.
+ *
+ * Loader order is not a contract: a plugin may activate before the service it
+ * wants is mounted (`ctx.get` then returns `undefined`, while the property access
+ * that needs `inject` throws). `ctx.inject` gives a dependent scope that waits,
+ * which is what makes registration independent of boot order.
+ *
+ * @param {object} ctx owning plugin context.
+ * @param {string} name service name.
+ * @param {(service: any) => void} callback runs once, with the resolved service.
+ */
+export function whenService(ctx, name, callback) {
+  const now = service(ctx, name)
+  if (now !== undefined) {
+    callback(now)
+    return
+  }
+  if (typeof ctx.inject !== 'function') return
+  try {
+    ctx.inject([name], (childCtx) => {
+      const later = service(childCtx, name)
+      if (later !== undefined) callback(later)
+    })
+  } catch {
+    // the name is not part of this composition at all: stay inactive, which is
+    // what an absent optional service means
+  }
+}
+
 /** Whether a service is reachable. */
 export function has(ctx, name) {
   return service(ctx, name) !== undefined

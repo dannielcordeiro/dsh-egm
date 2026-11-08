@@ -572,6 +572,58 @@ test('activation succeeds with no optional service at all', () => {
     get: () => undefined,
   }
   assert.doesNotThrow(() => apply(ctx, {}))
-  assert.ok(logger.lines.some((line) => line.includes('no skill registry')))
-  assert.ok(logger.lines.some((line) => line.includes('no tool registry')))
+  assert.ok(logger.lines.some((line) => line.includes('waiting for the skill registry')))
+  assert.ok(logger.lines.some((line) => line.includes('waiting for the tool registry')))
+})
+
+
+test('registration waits for a service that mounts after the plugin', async () => {
+  const logger = fakeLogger()
+  const services = {}
+  const pending = []
+  const commands = []
+  const tools = []
+  const skills = []
+  const ctx = {
+    logger,
+    fiber: { entry: { id: 'egm' } },
+    effect: (fn) => {
+      const value = fn()
+      return typeof value === 'function' ? value : () => {}
+    },
+    on: () => () => {},
+    get: (name) => services[name],
+    inject: (names, callback) => {
+      pending.push({ names, callback })
+    },
+    emit: async () => {},
+  }
+  const provide = (name, value) => {
+    services[name] = value
+    for (const entry of [...pending]) {
+      if (!entry.names.every((wanted) => services[wanted] !== undefined)) continue
+      pending.splice(pending.indexOf(entry), 1)
+      entry.callback(ctx)
+    }
+  }
+
+  apply(ctx, {})
+  assert.equal(commands.length, 0, 'nothing registers before the registry exists')
+  assert.equal(tools.length, 0)
+  assert.equal(skills.length, 0)
+
+  provide('commands', { register: (definition) => { commands.push(definition); return () => {} }, list: () => [], find: () => undefined })
+  assert.deepEqual(commands.map((command) => command.name), ['egm'])
+
+  provide('tools', {
+    register: (definition) => { tools.push(definition); return () => {} },
+    guard: () => () => {},
+    restrict: () => () => {},
+    schemas: () => [],
+  })
+  assert.deepEqual(tools.map((tool) => tool.name).sort(), ['egm_begin', 'egm_reviewer', 'egm_worker'])
+
+  provide('skills', { register: (skill) => { skills.push(skill); return () => {} } })
+  assert.equal(skills.length, 7)
+  assert.ok(logger.lines.some((line) => line.includes('registered /egm')))
 })

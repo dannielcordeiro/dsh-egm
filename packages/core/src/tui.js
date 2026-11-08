@@ -12,7 +12,7 @@
  * the profile routes, and the dialog chain used by the `/egm model` picker.
  */
 import { PHASES, allRoles, formatRoute, parseRoute } from './config.js'
-import { service } from './services.js'
+import { whenService } from './services.js'
 import { reviewerRoles } from './personas.js'
 import { STAGES } from './projection.js'
 
@@ -41,11 +41,14 @@ const PHASE_GLYPH = Object.freeze({
  */
 export function registerTui(ctx, deps) {
   const { config, router, live, workspace, projectionState } = deps
-  const status = service(ctx, 'tuiStatus') ?? false
-  const panels = service(ctx, 'tuiPanels') ?? false
-  const trees = service(ctx, 'tuiCommandTrees') ?? false
-  const sections = service(ctx, 'tuiSettingsSections') ?? false
-  const dialogs = service(ctx, 'tuiDialogs') ?? false
+  // The terminal mounts its services in its own layer; this plugin may activate
+  // before them, so each surface waits for its service instead of probing once.
+  let status = false
+  let panels = false
+  let trees = false
+  let sections = false
+  let dialogs = false
+  let lastAgent
   const enabled = config.features.tui !== false
   const noop = () => {}
 
@@ -72,8 +75,12 @@ export function registerTui(ctx, deps) {
   // ---- footer field ---------------------------------------------------------
   let disposeStatus
   function refresh(agent) {
-    if (status === false || agent === undefined) return
-    const view = snapshot(agent)
+    // Keep the Elephant: event listeners fire without an agent, and the footer
+    // must describe the session, never a reviewer child.
+    if (agent?.session !== undefined && agent.session.header?.origin !== 'subagent') lastAgent = agent
+    const target = agent?.session !== undefined ? agent : lastAgent
+    if (status === false || target === undefined) return
+    const view = snapshot(target)
     const running = live.running()
     const total = view.children.length
     const glyph = PHASE_GLYPH[view.phase] ?? '🐘'
@@ -105,8 +112,14 @@ export function registerTui(ctx, deps) {
     }
   }
 
+  whenService(ctx, 'tuiStatus', (resolved) => {
+    status = resolved
+    refresh(lastAgent)
+  })
+
   // ---- side panel -----------------------------------------------------------
-  if (panels !== false) {
+  whenService(ctx, 'tuiPanels', (resolved) => {
+    panels = resolved
     try {
       const disposer = panels.register({
         apiVersion: 1,
@@ -156,10 +169,11 @@ export function registerTui(ctx, deps) {
     } catch (error) {
       ctx.logger?.warn?.(`dsh-egm: panel registration failed: ${String(error?.message ?? error)}`)
     }
-  }
+  })
 
   // ---- command completion ---------------------------------------------------
-  if (trees !== false) {
+  whenService(ctx, 'tuiCommandTrees', (resolved) => {
+    trees = resolved
     try {
       trees.register({
         root: 'egm',
@@ -198,10 +212,11 @@ export function registerTui(ctx, deps) {
     } catch (error) {
       ctx.logger?.warn?.(`dsh-egm: command tree refused: ${String(error?.message ?? error)}`)
     }
-  }
+  })
 
   // ---- settings section -----------------------------------------------------
-  if (sections !== false) {
+  whenService(ctx, 'tuiSettingsSections', (resolved) => {
+    sections = resolved
     const routeField = (path, label, hint, group) => ({
       path,
       label,
@@ -254,7 +269,11 @@ export function registerTui(ctx, deps) {
     } catch (error) {
       ctx.logger?.warn?.(`dsh-egm: settings section refused: ${String(error?.message ?? error)}`)
     }
-  }
+  })
+
+  whenService(ctx, 'tuiDialogs', (resolved) => {
+    dialogs = resolved
+  })
 
   // ---- route picker ---------------------------------------------------------
   /**

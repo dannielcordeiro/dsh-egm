@@ -24,12 +24,13 @@ import { service } from './services.js'
  */
 export function registerEgmCommand(ctx, deps) {
   if (deps.config.features.commands === false) return
-  const commands = service(ctx, 'commands')
+  const commands = deps.commands ?? service(ctx, 'commands')
   if (commands === undefined) {
     ctx.logger?.warn?.('dsh-egm: no command registry is composed, so /egm is unavailable')
     return
   }
   {
+    ctx.logger?.info?.('dsh-egm: registered /egm')
     commands.register({
       name: 'egm',
       description: 'Elephant-Goldfish Model run: status, model routes, artifacts and diagnostics',

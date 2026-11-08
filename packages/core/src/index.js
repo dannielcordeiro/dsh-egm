@@ -32,7 +32,7 @@ import { registerEgmCommand } from './commands.js'
 import { ProfileWriter } from './persist.js'
 import { registerTui } from './tui.js'
 import { listRoutes } from './catalog.js'
-import { service } from './services.js'
+import { service, whenService } from './services.js'
 
 export { Config }
 
@@ -90,25 +90,25 @@ export function apply(ctx, raw) {
   }
 
   // ---- skills ---------------------------------------------------------------
-  const skills = service(ctx, 'skills')
-  if (skills === undefined) {
-    ctx.logger?.warn?.('dsh-egm: no skill registry is composed, so the EGM skills are not registered')
-  } else {
+  if (service(ctx, 'skills') === undefined) {
+    ctx.logger?.info?.('dsh-egm: waiting for the skill registry to register the EGM skills')
+  }
+  whenService(ctx, 'skills', (skills) => {
     let count = 0
     for (const skill of loadSkills()) {
       ctx.effect(() => skills.register(skill))
       count += 1
     }
     ctx.logger?.info?.(`dsh-egm: registered ${count} EGM skill(s) from the vendored upstream snapshot`)
-  }
+  })
 
   // ---- tools ----------------------------------------------------------------
-  const tools = service(ctx, 'tools')
-  if (tools === undefined) {
-    ctx.logger?.warn?.('dsh-egm: no tool registry is composed, so egm_reviewer, egm_worker and egm_begin are unavailable')
-  } else {
-    registerEgmTools(ctx, { ...deps, tools })
+  if (service(ctx, 'tools') === undefined) {
+    ctx.logger?.info?.('dsh-egm: waiting for the tool registry to add egm_reviewer, egm_worker and egm_begin')
   }
+  whenService(ctx, 'tools', (tools) => {
+    registerEgmTools(ctx, { ...deps, tools })
+  })
 
   // ---- durable run state ----------------------------------------------------
   ctx.inject(['sessionProjections'], (projectionCtx) => {
@@ -128,7 +128,10 @@ export function apply(ctx, raw) {
   // ---- commands -------------------------------------------------------------
   const writer = new ProfileWriter(ctx)
   deps.writer = writer.available() ? writer : undefined
-  registerEgmCommand(ctx, deps)
+  whenService(ctx, 'commands', (commands) => {
+    deps.commands = commands
+    registerEgmCommand(ctx, deps)
+  })
 
   // ---- terminal surfaces ----------------------------------------------------
   tui = registerTui(ctx, deps)
