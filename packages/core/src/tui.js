@@ -60,10 +60,13 @@ export function registerTui(ctx, deps) {
     const phase = state.phase
     const role = phase ?? 'elephant'
     const resolved = router.resolve({ role, agent, cwd: cwdOfAgent(agent) })
+    // With no configured route the honest answer is the model the session is
+    // actually on, not the word "inherit".
+    const inUse = resolved.route === null ? currentRouteOf(agent) : undefined
     return {
       phase,
-      route: resolved.route,
-      source: resolved.source,
+      route: resolved.route ?? inUse ?? null,
+      source: inUse === undefined ? resolved.source : 'session',
       children: Object.values(state.children ?? {}),
       live: live.snapshot().children,
       stages: state.stages ?? {},
@@ -130,7 +133,7 @@ export function registerTui(ctx, deps) {
         component: ({ React, ui, host }) => {
           const { Box, Text, Divider } = ui
           const tick = ui.useAnimationTime(live.running() > 0 ? 1000 : null)
-          const agent = host?.snapshot?.()?.agent
+          const agent = host?.snapshot?.()?.agent ?? lastAgent
           const view = snapshot(agent)
           const rows = []
           rows.push(React.createElement(Text, { key: 'phase', bold: true },
@@ -350,6 +353,27 @@ function roleDescription(role) {
   if (role === 'default') return 'reviewers with no route of their own'
   if (PHASES.includes(role)) return `phase ${role}`
   return 'reviewer persona'
+}
+
+/** The route the session is currently using, as a route object. */
+function currentRouteOf(agent) {
+  try {
+    const config = agent?.session?.requestHeader?.()?.config
+    if (config?.provider !== undefined && config?.model !== undefined) {
+      return {
+        provider: String(config.provider),
+        model: String(config.model),
+        ...config.reasoningEffort === undefined || config.reasoningEffort === null ? {} : { reasoningEffort: String(config.reasoningEffort) },
+      }
+    }
+  } catch {
+    // fall through to the creation options
+  }
+  const options = agent?.options ?? {}
+  if (options.provider !== undefined && options.model !== undefined) {
+    return { provider: options.provider, model: options.model, ...options.reasoningEffort === undefined ? {} : { reasoningEffort: options.reasoningEffort } }
+  }
+  return undefined
 }
 
 /** The calling agent's working directory. */

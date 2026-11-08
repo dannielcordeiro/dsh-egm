@@ -86,8 +86,9 @@ export class LiveFacts {
         return
       }
       case 'assistant/message': {
-        const usage = data.message?.usage
-        if (usage === undefined) return
+        // The Harness logs usage beside the message, not inside it.
+        const usage = data.usage ?? data.message?.usage
+        if (usage === undefined || usage === null) return
         child.tokens.input += usage.inputTokens ?? 0
         child.tokens.output += usage.outputTokens ?? 0
         child.tokens.cacheRead += usage.cacheReadTokens ?? 0

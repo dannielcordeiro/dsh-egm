@@ -230,8 +230,9 @@ export function applyEvent(state, event) {
       return { ...state, elephant: next }
     }
     case 'assistant/message': {
-      const usage = data.message?.usage
-      if (usage === undefined) return state
+      // The Harness logs usage beside the message, not inside it.
+      const usage = data.usage ?? data.message?.usage
+      if (usage === undefined || usage === null) return state
       const budget = state.budget ?? {}
       return {
         ...state,

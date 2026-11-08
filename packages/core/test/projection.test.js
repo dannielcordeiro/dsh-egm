@@ -139,10 +139,20 @@ test('unrelated files are not artifacts', () => {
 
 test('usage accumulates across turns', () => {
   const state = fold([
-    { type: 'assistant/message', data: { message: { usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 2 } } } },
-    { type: 'assistant/message', data: { message: { usage: { inputTokens: 1, outputTokens: 1 } } } },
+    { type: 'assistant/message', data: { usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 2 } } },
+    { type: 'assistant/message', data: { usage: { inputTokens: 1, outputTokens: 1 } } },
   ])
   assert.deepEqual(state.budget, { input: 11, output: 6, cacheRead: 2, cacheWrite: 0 })
+})
+
+test('usage inside the message is still read, for older logs', () => {
+  const state = fold([{ type: 'assistant/message', data: { message: { usage: { inputTokens: 4, outputTokens: 2 } } } }])
+  assert.equal(state.budget.input, 4)
+})
+
+test('a message with no usage is ignored', () => {
+  const state = fold([{ type: 'assistant/message', data: { message: {}, usage: null } }])
+  assert.deepEqual(state.budget, {})
 })
 
 test('the view reports stages, children and cost', () => {

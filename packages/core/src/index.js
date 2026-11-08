@@ -155,8 +155,14 @@ export function apply(ctx, raw) {
   }))
 
   ctx.effect(() => ctx.on('agent/created', ({ agent }) => {
-    if (agent?.session?.header?.origin !== 'subagent') return
-    refreshSoon(undefined)
+    if (agent?.session === undefined) return
+    if (agent.session.header?.origin === 'subagent') {
+      refreshSoon(undefined)
+      return
+    }
+    // The first top-level agent is the Elephant: paint the footer for it now,
+    // instead of waiting for the first /egm command.
+    tui?.refresh?.(agent)
   }))
 
   ctx.effect(() => ctx.on('subagent/end', () => tui?.refresh?.(undefined)))
