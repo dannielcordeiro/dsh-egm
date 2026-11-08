@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 
 /** Package root: `src/` is one level below it. */
 export const PACKAGE_ROOT = fileURLToPath(new URL('../', import.meta.url))
-export const AGENTS_DIR = join(PACKAGE_ROOT, 'vendor', 'agents')
+export const AGENTS_DIR = join(PACKAGE_ROOT, 'agents')
 
 /**
  * Convenience spellings people actually type, mapped to the persona stem.
@@ -114,7 +114,7 @@ export function normalizeRole(value) {
 
 /**
  * Role named by an upstream `Persona:` line. The envelope names an absolute
- * path (`…/vendor/agents/zoom_out.md`), but a bare persona name is accepted too.
+ * path (`…/agents/zoom_out.md`), but a bare persona name is accepted too.
  * @param {string} prompt reviewer prompt text.
  */
 export function roleFromPrompt(prompt) {

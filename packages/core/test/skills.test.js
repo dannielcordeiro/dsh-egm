@@ -25,7 +25,7 @@ test('each skill keeps its upstream name, description and body', () => {
     assert.match(skill.name, /^egm-[a-z-]+$/u)
     assert.ok(skill.description.length > 40, `${skill.name} has no description`)
     assert.ok(skill.content.includes('<dsh_integration>'))
-    const upstream = readFileSync(join(PACKAGE_ROOT, 'vendor', 'skills', skill.name, 'SKILL.md'), 'utf8')
+    const upstream = readFileSync(join(PACKAGE_ROOT, 'skills', skill.name, 'SKILL.md'), 'utf8')
     assert.ok(upstream.includes(skill.description.split(' ').slice(0, 4).join(' ')))
     assert.equal(skill.source, 'bundled')
     assert.equal(skill.invocation.modelInvocable, true)
@@ -35,7 +35,7 @@ test('each skill keeps its upstream name, description and body', () => {
 })
 
 test('the preamble states the harness mechanics the upstream text needs', () => {
-  const preamble = integrationPreamble({ name: 'egm-review', directory: join(PACKAGE_ROOT, 'vendor', 'skills', 'egm-review') })
+  const preamble = integrationPreamble({ name: 'egm-review', directory: join(PACKAGE_ROOT, 'skills', 'egm-review') })
   for (const needle of [
     'Package root:',
     'This skill\'s directory:',

@@ -14,7 +14,7 @@ test('the manifest exposes exactly what the loader needs', () => {
   assert.equal(manifest.exports['./package.json'], './package.json')
   assert.equal(manifest.dsh.bundle.patch, './cordis.patch.yml')
   assert.match(manifest.engines.dsh, /<0\.3\.0/u)
-  assert.ok(manifest.files.includes('vendor'))
+  for (const root of ['agents', 'resources', 'skills']) assert.ok(manifest.files.includes(root), `${root} must be packed`)
 })
 
 test('the core package declares no browser half', () => {

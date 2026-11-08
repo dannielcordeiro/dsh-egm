@@ -16,7 +16,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { PACKAGE_ROOT } from './personas.js'
 
-export const SKILLS_DIR = join(PACKAGE_ROOT, 'vendor', 'skills')
+export const SKILLS_DIR = join(PACKAGE_ROOT, 'skills')
 
 /** Skill directory name to the phase it starts. */
 const PHASE_OF_SKILL = Object.freeze({
@@ -69,7 +69,8 @@ export function integrationPreamble(skill) {
     'This is an upstream Elephant-Goldfish Model skill running on DeepSeek Harness. These notes override any incompatible instruction below.',
     `Package root: ${PACKAGE_ROOT}`,
     `This skill's directory: ${skill.directory}`,
-    'Resolve `agents/...`, `resources/...` and the upstream plugin-root placeholder against the package root; resolve `references/...` against this skill\'s directory.',
+    `Personas: ${join(PACKAGE_ROOT, 'agents')}/<file>.md — standards: ${join(PACKAGE_ROOT, 'resources', 'document_standards')}/<file>.md — skill-local references: ${join(PACKAGE_ROOT, 'skills', skill.name, 'references')}/<file>.`,
+    'Resolve `agents/...`, `resources/...` and the upstream plugin-root placeholder against the package root; resolve `references/...` against this skill\'s directory. Those directories exist at the package root; do not add a `vendor/` segment.',
     'Ignore instructions written for another agent harness and its integration documents; those files are not shipped and do not apply here.',
     `Routing: unless the user started this phase with \`/egm-${phase}\`, call \`egm_begin({phase:${JSON.stringify(phase)}})\` once before your first action. It applies the model this deployment configured for the phase and returns it. Do not call it again in the same phase.`,
     'Goldfish reviewers: start each one with `egm_reviewer({description, prompt, role})`. Never use `subagent` or `subagent_fork` for a reviewer. Reviewers are single-use: do not message or resume one; if an answer is truncated or unusable, start a fresh reviewer with the full prompt.',

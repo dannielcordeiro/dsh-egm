@@ -28,13 +28,15 @@
   },
   "files": [
     "src",
-    "vendor",
     "upstream.lock.json",
     "adapters",
     "cordis.patch.yml",
     "locale",
     "icon.svg",
-    "README.md"
+    "README.md",
+    "agents",
+    "resources",
+    "skills"
   ],
   "peerDependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"

@@ -5,7 +5,7 @@ This product includes software developed at Google LLC as part of
 google/elephant-goldfish-model (https://github.com/google/elephant-goldfish-model),
 redistributed unchanged under the Apache License, Version 2.0.
 
-The following paths under packages/core/vendor/ are byte-identical copies of
+The following paths under packages/core/ are byte-identical copies of
 that project at commit e9e1f06aa4e26e95cd4ed37210a0632202c429e9, with one
 SHA-256 recorded per file in packages/core/upstream.lock.json:
 

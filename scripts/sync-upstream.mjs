@@ -19,7 +19,7 @@ import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const VENDOR_DIR = join(ROOT, 'packages', 'core', 'vendor')
+const VENDOR_DIR = join(ROOT, 'packages', 'core')
 const LOCK_PATH = join(ROOT, 'packages', 'core', 'upstream.lock.json')
 
 /** Upstream repository and the revision this package redistributes. */
@@ -80,7 +80,11 @@ async function remoteRuntimePaths(commit) {
     .sort()
 }
 
-/** Walk the vendored tree and return every file path, relative to `vendor/`. */
+/**
+ * Walk the three vendored roots and return every file path, relative to the
+ * package root. Only those roots are vendored; everything else in the package
+ * is authored source and must not be reported as an unexpected file.
+ */
 async function localRuntimePaths() {
   const found = []
   async function walk(directory) {
@@ -97,7 +101,7 @@ async function localRuntimePaths() {
       else found.push(relative(VENDOR_DIR, full).split(sep).join('/'))
     }
   }
-  await walk(VENDOR_DIR)
+  for (const root of ['agents', 'resources', 'skills']) await walk(join(VENDOR_DIR, root))
   return found.sort()
 }
 
