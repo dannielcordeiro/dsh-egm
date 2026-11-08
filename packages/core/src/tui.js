@@ -16,6 +16,30 @@ import { whenService } from './services.js'
 import { reviewerRoles } from './personas.js'
 import { STAGES } from './projection.js'
 
+/**
+ * The footer text and its hover detail, as pure functions of the run.
+ *
+ * Kept separate from the terminal call so the exact strings are testable: this
+ * is the only thing a user reads at a glance, and truncation mistakes are silent.
+ * @param {object} view the run snapshot (`phase`, `route`, `source`, `children`, `artifacts`).
+ * @param {number} running how many children are running.
+ * @returns {{text: string, detail: string}}
+ */
+export function footerFor(view, running) {
+  const glyph = PHASE_GLYPH[view.phase] ?? '🐘'
+  const total = view.children.length
+  const count = total === 0 ? '' : ` · ${running > 0 ? `${running}/${total}` : total}`
+  const text = `${glyph} ${shortRoute(view.route)}${count}`
+  const detail = [
+    `phase: ${view.phase ?? 'not started'}`,
+    `route: ${formatRoute(view.route)} (${view.source})`,
+    total === 0 ? 'no reviewers yet' : `reviewers: ${running} running of ${total}`,
+    view.artifacts.length === 0 ? '' : `artifacts: ${view.artifacts.length}`,
+    'Ctrl+B opens the EGM panel',
+  ].filter((line) => line !== '').join(' · ')
+  return { text, detail }
+}
+
 /** Show a short route: drop the provider when it is already obvious. */
 function shortRoute(route) {
   if (route === null || route === undefined) return 'inherit'
@@ -85,16 +109,7 @@ export function registerTui(ctx, deps) {
     if (status === false || target === undefined) return
     const view = snapshot(target)
     const running = live.running()
-    const total = view.children.length
-    const glyph = PHASE_GLYPH[view.phase] ?? '🐘'
-    const text = `${glyph} ${shortRoute(view.route)}${total === 0 ? '' : ` · ${running > 0 ? `${running}/${total}` : total}`}`
-    const detail = [
-      `phase: ${view.phase ?? 'not started'}`,
-      `route: ${formatRoute(view.route)} (${view.source})`,
-      total === 0 ? 'no reviewers yet' : `reviewers: ${running} running of ${total}`,
-      view.artifacts.length === 0 ? '' : `artifacts: ${view.artifacts.length}`,
-      'click or press the EGM panel for the run',
-    ].filter((line) => line !== '').join(' · ')
+    const { text, detail } = footerFor(view, running)
     try {
       disposeStatus?.()
       disposeStatus = status.setField('egm', text, {
