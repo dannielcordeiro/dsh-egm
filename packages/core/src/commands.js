@@ -52,6 +52,9 @@ export function registerEgmCommand(ctx, deps) {
 export async function handleEgmCommand(deps, invocation) {
   const parsed = parseEgmCommand('egm', invocation.rawInput)
   const agent = invocation.agent
+  // Reading the run is also a chance to repaint the terminal footer, which is
+  // otherwise only repainted when something changes.
+  deps.refresh?.(agent)
   switch (parsed.kind) {
     case 'help':
       return ok(EGM_USAGE)

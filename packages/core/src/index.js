@@ -157,11 +157,14 @@ export function apply(ctx, raw) {
   ctx.effect(() => ctx.on('agent/created', ({ agent }) => {
     if (agent?.session === undefined) return
     if (agent.session.header?.origin === 'subagent') {
-      refreshSoon(undefined)
+      // A child knows its parent: that is the Elephant to describe in the footer
+      // when this process never saw the parent's own creation (resumed session).
+      const parentId = agent.session.header?.parentSession
+      const parent = parentId === undefined ? undefined : service(ctx, 'agents')?.get?.(parentId)
+      if (parent !== undefined) tui?.refresh?.(parent)
+      else refreshSoon(undefined)
       return
     }
-    // The first top-level agent is the Elephant: paint the footer for it now,
-    // instead of waiting for the first /egm command.
     tui?.refresh?.(agent)
   }))
 
