@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "repository": "google/elephant-goldfish-model",
+  "branch": "main",
+  "commit": "e9e1f06aa4e26e95cd4ed37210a0632202c429e9",
+  "license": "Apache-2.0",
+  "copyright": "Copyright Google LLC",
+  "files": [
+    {
+      "path": "agents/bootstrap_orchestrator.md",
+      "bytes": 1706,
+      "sha256": "5c2fa484754f8d582669500d16d5728fe95daff8bd964f8e7f09142c6a666bfc"
+    },
+    {
+      "path": "agents/codebase_details.md",
+      "bytes": 4683,
+      "sha256": "d80db07e449b57b3b3776d1401cca72a54b6b65a0ab218b86f9064ee4b8167bc"
+    },
+    {
+      "path": "agents/comprehension.md",
+      "bytes": 4748,
+      "sha256": "974f4972f717dc7b102a9b1407b3a625749149f2ae905727241e919f43cc3fa5"
+    },
+    {
+      "path": "agents/design_critic.md",
+      "bytes": 3843,
+      "sha256": "cee6294735ce2bd4fea19245852b6eb07cbe8ede7e72a4bfc829f586e4a39d0f"
+    },
+    {
+      "path": "agents/implementation_readiness.md",
+      "bytes": 3929,
+      "sha256": "1f6aa61cfe7cb86dc94943ab3b3fd339e5baba533937198fd10edb06dfa64e8f"
+    },
+    {
+      "path": "agents/inventive_catalyst.md",
+      "bytes": 7355,
+      "sha256": "e766638298dfa42859172df62d1c0a4faa9ade143bcfc92837b5843a684e1da4"
+    },
+    {
+      "path": "agents/structural.md",
+      "bytes": 3954,
+      "sha256": "f0d4fe6faee4e388366b7d653fe353a9b09f45ca1bf5dae29280e351cda7da87"
+    },
+    {
+      "path": "agents/style.md",
+      "bytes": 4879,
+      "sha256": "9330780622baaef8dc683ea78efb3ff8e4583e3dde7ab6092b84df50e8c9ea58"
+    },
+    {
+      "path": "agents/synthesizer.md",
+      "bytes": 4860,
+      "sha256": "44d1288c03ec829acafd8af0226ce1d0603f4cf04e9f8438b5b36a451be8f8b6"
+    },
+    {
+      "path": "agents/zoom_out.md",
+      "bytes": 4903,
+      "sha256": "adc9d7b7db4c304866e61d5e5e446502231abe188ce64656939305e07ae7995f"
+    },
+    {
+      "path": "resources/document_standards/feature-spec-standard.md",
+      "bytes": 1659,
+      "sha256": "8e9821e7bfd7c074dd1cec7ba02e3ea09a3fd32e35b91a1463a37c1ee3b9d6a4"
+    },
+    {
+      "path": "resources/document_standards/heilmeier-standard.md",
+      "bytes": 1155,
+      "sha256": "a23bc354a5651bd00d817409a72ebcb7536c249e2038c13255ce89f49f138174"
+    },
+    {
+      "path": "resources/document_standards/implementation-readiness-standard.md",
+      "bytes": 1654,
+      "sha256": "49ef3a44228a14c774ec606477293be6467b232a9e4af9e031a3cad64ed87642"
+    },
+    {
+      "path": "resources/document_standards/re-implementation-standard.md",
+      "bytes": 1535,
+      "sha256": "421aacbf5e9a0d4c5b794edfa4cac333f8cc67bc4cf0e3717efcad4f827e6e46"
+    },
+    {
+      "path": "resources/document_standards/zoom-out-standard.md",
+      "bytes": 2884,
+      "sha256": "0a01013bd363a8d744f8372b65495892360d7339e4e35c767003ae38f48e6799"
+    },
+    {
+      "path": "resources/execution_instructions.md",
+      "bytes": 2554,
+      "sha256": "fa47f016cd8636e3b386faf402d40ac1a3dc987db5bc158cc299db4bf34492c8"
+    },
+    {
+      "path": "resources/README.md",
+      "bytes": 887,
+      "sha256": "109c89969542dd5919c3f50f1bcf569c7668a505bff10439044135526e1a6b01"
+    },
+    {
+      "path": "skills/egm-bootstrap/references/templates.md",
+      "bytes": 2064,
+      "sha256": "f49793727cccbd72afdc4a0569a1d8e8138e943d2fc9b0df772b09deaca80437"
+    },
+    {
+      "path": "skills/egm-bootstrap/references/worker-return.schema.json",
+      "bytes": 568,
+      "sha256": "f18a3822f60a0f117e1582cccac78a90cf14154afca811d4e81ea3fe562e52a5"
+    },
+    {
+      "path": "skills/egm-bootstrap/SKILL.md",
+      "bytes": 23764,
+      "sha256": "4a63ecf9db2a512f10da122b3767fdd1d501ae28d2d1db9865534557fe0f961b"
+    },
+    {
+      "path": "skills/egm-brainstorm/SKILL.md",
+      "bytes": 15205,
+      "sha256": "a660b44e3cfdd23da8e8ecff2ff1aa01accb96ad2a823b67c90f89fc188ec7e8"
+    },
+    {
+      "path": "skills/egm-draft/references/design_doc.md",
+      "bytes": 5432,
+      "sha256": "309246562d1ffd801b3a2cd81f5cbc767d36f7530046f6ac681b6db40c6c7965"
+    },
+    {
+      "path": "skills/egm-draft/SKILL.md",
+      "bytes": 17479,
+      "sha256": "2c107ecd3751635df1eedef261c7e14a79e7bb9429d20753c3f0df5834e1dbec"
+    },
+    {
+      "path": "skills/egm-drift-report/SKILL.md",
+      "bytes": 3169,
+      "sha256": "c000ffe2e77a9fe74ee6915b314e1547337c95c79a19014c44fd976dc6511476"
+    },
+    {
+      "path": "skills/egm-resolve/SKILL.md",
+      "bytes": 8541,
+      "sha256": "fe12b8712f88b51780d817e6c8f0ac5e7a29961ee111d0fd19bfc2f738d2f531"
+    },
+    {
+      "path": "skills/egm-review-loop/SKILL.md",
+      "bytes": 10325,
+      "sha256": "844b174055d32a7394f1096964a289987272109fff531a080fc9c3c9acef26fa"
+    },
+    {
+      "path": "skills/egm-review/SKILL.md",
+      "bytes": 24257,
+      "sha256": "a17ee3b983bcd77000099bedf014db84a7a6e6f3245c712acd84a4f119b6b58c"
+    }
+  ]
+}
