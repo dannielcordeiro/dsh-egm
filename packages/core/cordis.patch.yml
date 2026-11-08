@@ -1,0 +1,77 @@
+- insert:
+    # Single active row for this package on purpose: a package that declares a
+    # Web client half must resolve from exactly one active Loader source, and the
+    # browser UI lives in its own package (@local/dsh-egm-ui).
+    - id: egm
+      name: '@local/dsh-egm'
+      config:
+        routing:
+          # fail: a configured but unusable route stops the reviewer with an
+          # actionable message. inherit: fall back to the parent's route.
+          onInvalidRoute: fail
+          # inherit: a role with no configured route keeps today's behaviour.
+          onMissingRole: inherit
+          elephant: null
+          phases: {}
+          reviewers: {}
+          workers: null
+        maxTokens:
+          # model-default: use the target model's own cap when the route changes.
+          # inherit: keep the parent's value. fixed: always use `fixed`.
+          policy: model-default
+          fixed: 8192
+        pricing: {}
+        features:
+          reviewerTool: true
+          workerTool: true
+          commands: true
+          tui: true
+
+    - id: preset-egm-reviewer
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: egm-reviewer
+        name: EGM Goldfish reviewer
+        description: Read-only fresh-context reviewer for the Elephant-Goldfish Model; it can read and search, and cannot write, run commands, ask the user, read the conversation, or delegate.
+        order: 90
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: >-
+                You are a read-only design reviewer started in a fresh context.
+                You can read and search files; you cannot write or edit files, run
+                commands, ask the user, read the orchestrating conversation, or
+                delegate work. A capability-discovery tool may appear in your tool
+                list; it is blocked in this context, so do not call it and do not
+                try to acquire more tools.
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              read: true
+              readImage: true
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          # The read-only guard lives in its own module so it runs in the
+          # reviewer's scope, where the tool registry is injectable.
+          - id: egm-guard
+            name: '@local/dsh-egm/guard'

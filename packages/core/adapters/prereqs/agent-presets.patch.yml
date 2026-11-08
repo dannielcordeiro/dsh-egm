@@ -1,0 +1,16 @@
+- insert:
+    # Opt-in prerequisites for profiles that compose no agent-preset registry
+    # (the shipped `headless` and `sdk` templates). Profiles seeded from `web`
+    # or `dsh-tui` already mount a registry with a valid default: do NOT apply
+    # this file there, it would insert duplicate ids instead of merging.
+    #
+    #   dsh headless --patch <installed package>/adapters/prereqs/agent-presets.patch.yml
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
+      config:
+        default: standard
+    - id: preset-standard
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: standard
+        plugins: []

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Elephant-Goldfish Model",
+    "description": "Design with an Elephant, review with fresh-context Goldfish, route each role to its own model, and follow the run from the terminal or the browser."
+  }
+}
