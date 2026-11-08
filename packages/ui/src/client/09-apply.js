@@ -9,15 +9,8 @@ function apply(ctx) {
   const disposeLocale = ctx.locale.register(NS, DICT)
   if (typeof disposeLocale === 'function') ctx.effect(() => disposeLocale)
 
-  // The window itself lives in the root overlay: it belongs to no single slot.
-  try {
-    ctx.slots.register({
-      name: 'shell.overlay',
-      locale: NS,
-    }, (props) => h(EgmWindow, { ...props, ctx }))
-  } catch (error) {
-    console.warn(`dsh-egm-ui: window not registered: ${String(error?.message ?? error)}`)
-  }
+  // The window is not a slot of its own: the chip portals it to the body, so it
+  // cannot be lost to a slot the shell does not mount for third-party packages.
 
   // Composer chip: the only surface that knows the session, so it feeds the window.
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({

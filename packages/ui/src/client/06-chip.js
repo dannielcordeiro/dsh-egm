@@ -6,6 +6,7 @@
  */
 function EgmChip({ ctx, t, sessionId, useProjection }) {
   const [open, setOpen] = useState(false)
+  const windowState = useWindowState()
   const wrapRef = useRef(null)
   const view = typeof useProjection === 'function' ? useProjection('egmRun') : undefined
   const catalog = typeof useProjection === 'function' ? useProjection('subagentCatalog') : undefined
@@ -45,7 +46,22 @@ function EgmChip({ ctx, t, sessionId, useProjection }) {
 
   const preview = runs.slice(-3).reverse()
 
-  return h('div', { style: { position: 'relative', display: 'inline-flex', alignItems: 'center' }, ref: wrapRef },
+  // The window is portalled from this slot rather than registered on a root
+  // overlay: the composer slot is always mounted for the active session and knows
+  // its id, and `shell.overlay` proved unreliable for a third-party package.
+  const wantsWindow = windowState.open && (sessionId === undefined || windowState.sessionId === sessionId)
+  const windowNode = wantsWindow ? h(EgmBoundary, { t, children: h(EgmWindow, { ctx, t }) }) : null
+  // Portal when the shell exposes react-dom (it does); otherwise render in place,
+  // so "Details" always shows something instead of silently doing nothing.
+  const portal = windowNode === null
+    ? null
+    : typeof ReactDOM?.createPortal === 'function'
+      ? ReactDOM.createPortal(windowNode, document.body)
+      : windowNode
+
+  return h(React.Fragment, null,
+    portal,
+    h('div', { style: { position: 'relative', display: 'inline-flex', alignItems: 'center' }, ref: wrapRef },
     h('style', null, CSS),
     h('button', {
       type: 'button',
@@ -84,5 +100,5 @@ function EgmChip({ ctx, t, sessionId, useProjection }) {
       h('div', { className: 'egm-actions' },
         h('button', { type: 'button', className: 'egm-btn primary', onClick: openWindow }, t('details')),
         h('button', { type: 'button', className: 'egm-btn', onClick: () => setOpen(false) }, t('close'))))
-      : null)
+      : null))
 }

@@ -22,8 +22,16 @@ const windowStore = (() => {
     publish(sessionId, data) {
       if (state.sessionId !== sessionId || state.data !== data) commit({ ...state, sessionId, data })
     },
+    /**
+     * Open the window for a session.
+     * A surface that has no session of its own (the chat row, whose slot may omit
+     * it) falls back to the session the chip published last.
+     */
     openFor(sessionId, tab = 'runs') {
-      commit({ ...state, sessionId, open: true, tab })
+      const target = sessionId ?? state.sessionId
+      if (target === undefined) return false
+      commit({ ...state, sessionId: target, open: true, tab })
+      return true
     },
     setTab(tab) {
       commit({ ...state, tab })

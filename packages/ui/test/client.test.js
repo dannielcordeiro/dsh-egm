@@ -20,6 +20,12 @@ function loadPlugin() {
   const React = {
     createElement: (...args) => ({ type: 'element', args }),
     Fragment: 'fragment',
+    Component: class {
+      constructor(props) {
+        this.props = props
+        this.state = {}
+      }
+    },
     useState: (initial) => [initial, () => {}],
     useEffect: () => {},
     useCallback: (fn) => fn,
@@ -33,14 +39,17 @@ function loadPlugin() {
       }
     },
   }
+  const ReactDOM = { createPortal: () => null }
   const source = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
   const module = { exports: {} }
   new Function('window', 'module', 'exports', 'require', source)(window, module, module.exports, (id) => {
-    assert.equal(id, 'react')
-    return React
+    if (id === 'react') return React
+    if (id === 'react-dom') return ReactDOM
+    throw new Error(`unexpected require(${id})`)
   })
   const plugin = captured.factory((id) => {
     if (id === 'react') return React
+    if (id === 'react-dom') return ReactDOM
     throw new Error(`unexpected require(${id})`)
   })
 
@@ -71,9 +80,7 @@ test('every surface is registered', () => {
   assert.deepEqual(plugin.inject, ['slots', 'locale', 'remote', 'remote.commands'])
 
   const byName = (name) => registrations.filter((entry) => entry.kind === 'slot' && entry.options.name === name)
-  const window = byName('shell.overlay')
-  assert.equal(window.length, 1, 'the EGM window lives in the root overlay')
-  assert.equal(typeof window[0].component, 'function')
+  assert.equal(byName('shell.overlay').length, 0, 'the window is portalled from the chip, not registered on a root slot')
 
   const chip = byName('conversation.input.right')[0]
   assert.equal(chip.options.id, 'egm-run')

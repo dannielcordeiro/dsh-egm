@@ -6,6 +6,39 @@
  * session store the chip publishes; the two command-backed tabs (configuration
  * and diagnostics) run a command only when the user clicks.
  */
+/**
+ * Keeps a defect in the window from tearing down the composer it portals from.
+ * React class components are the only way to catch a render error.
+ */
+class EgmBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error) {
+    console.warn(`dsh-egm-ui: the EGM window failed to render: ${String(error?.message ?? error)}`)
+  }
+
+  render() {
+    if (this.state.error !== null) {
+      return h('div', { className: 'egm-win', role: 'presentation' },
+        h('style', null, CSS),
+        h('div', { className: 'egm-win-box', role: 'dialog', 'aria-modal': 'true' },
+          h('div', { className: 'egm-win-head' },
+            h('span', { className: 'egm-win-title' }, '🐘 EGM'),
+            h('button', { type: 'button', className: 'egm-btn egm-win-close', onClick: () => windowStore.close() }, this.props.t('close'))),
+          h('div', { className: 'egm-win-body' },
+            h('div', { className: 'egm-error', role: 'alert' }, String(this.state.error?.message ?? this.state.error)))))
+    }
+    return this.props.children
+  }
+}
+
 function EgmWindow({ ctx, t }) {
   const state = useWindowState()
   const sessionId = state.sessionId

@@ -28,6 +28,17 @@
 - `/egm catalogue [--json]` lists providers, models and efforts for the
   configuration tab.
 
+**Corrections after the first browser test**
+
+- The window is no longer registered on `shell.overlay` (which mounted nothing for
+  this package): the composer chip portals it to `document.body`, and falls back
+  to rendering in place when `react-dom` is unavailable, so "Details" always does
+  something.
+- A defect inside the window now shows an error inside the dialog instead of
+  tearing down the composer (error boundary).
+- Opening from a chat row whose slot omits the session id reuses the session the
+  chip published.
+
 **Repository**
 
 - The browser bundle is generated from ordered parts by

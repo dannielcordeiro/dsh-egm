@@ -13,6 +13,7 @@ window.__ModuleLoader__.load({
   id: '@local/dsh-egm-ui',
   factory(require) {
     const React = require('react')
+    const ReactDOM = require('react-dom')
     const h = React.createElement
     const { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } = React
 
@@ -368,8 +369,16 @@ window.__ModuleLoader__.load({
         publish(sessionId, data) {
           if (state.sessionId !== sessionId || state.data !== data) commit({ ...state, sessionId, data })
         },
+        /**
+         * Open the window for a session.
+         * A surface that has no session of its own (the chat row, whose slot may omit
+         * it) falls back to the session the chip published last.
+         */
         openFor(sessionId, tab = 'runs') {
-          commit({ ...state, sessionId, open: true, tab })
+          const target = sessionId ?? state.sessionId
+          if (target === undefined) return false
+          commit({ ...state, sessionId: target, open: true, tab })
+          return true
         },
         setTab(tab) {
           commit({ ...state, tab })
@@ -448,6 +457,39 @@ window.__ModuleLoader__.load({
      * session store the chip publishes; the two command-backed tabs (configuration
      * and diagnostics) run a command only when the user clicks.
      */
+    /**
+     * Keeps a defect in the window from tearing down the composer it portals from.
+     * React class components are the only way to catch a render error.
+     */
+    class EgmBoundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { error: null }
+      }
+
+      static getDerivedStateFromError(error) {
+        return { error }
+      }
+
+      componentDidCatch(error) {
+        console.warn(`dsh-egm-ui: the EGM window failed to render: ${String(error?.message ?? error)}`)
+      }
+
+      render() {
+        if (this.state.error !== null) {
+          return h('div', { className: 'egm-win', role: 'presentation' },
+            h('style', null, CSS),
+            h('div', { className: 'egm-win-box', role: 'dialog', 'aria-modal': 'true' },
+              h('div', { className: 'egm-win-head' },
+                h('span', { className: 'egm-win-title' }, '🐘 EGM'),
+                h('button', { type: 'button', className: 'egm-btn egm-win-close', onClick: () => windowStore.close() }, this.props.t('close'))),
+              h('div', { className: 'egm-win-body' },
+                h('div', { className: 'egm-error', role: 'alert' }, String(this.state.error?.message ?? this.state.error)))))
+        }
+        return this.props.children
+      }
+    }
+
     function EgmWindow({ ctx, t }) {
       const state = useWindowState()
       const sessionId = state.sessionId
@@ -715,6 +757,7 @@ window.__ModuleLoader__.load({
      */
     function EgmChip({ ctx, t, sessionId, useProjection }) {
       const [open, setOpen] = useState(false)
+      const windowState = useWindowState()
       const wrapRef = useRef(null)
       const view = typeof useProjection === 'function' ? useProjection('egmRun') : undefined
       const catalog = typeof useProjection === 'function' ? useProjection('subagentCatalog') : undefined
@@ -754,7 +797,22 @@ window.__ModuleLoader__.load({
 
       const preview = runs.slice(-3).reverse()
 
-      return h('div', { style: { position: 'relative', display: 'inline-flex', alignItems: 'center' }, ref: wrapRef },
+      // The window is portalled from this slot rather than registered on a root
+      // overlay: the composer slot is always mounted for the active session and knows
+      // its id, and `shell.overlay` proved unreliable for a third-party package.
+      const wantsWindow = windowState.open && (sessionId === undefined || windowState.sessionId === sessionId)
+      const windowNode = wantsWindow ? h(EgmBoundary, { t, children: h(EgmWindow, { ctx, t }) }) : null
+      // Portal when the shell exposes react-dom (it does); otherwise render in place,
+      // so "Details" always shows something instead of silently doing nothing.
+      const portal = windowNode === null
+        ? null
+        : typeof ReactDOM?.createPortal === 'function'
+          ? ReactDOM.createPortal(windowNode, document.body)
+          : windowNode
+
+      return h(React.Fragment, null,
+        portal,
+        h('div', { style: { position: 'relative', display: 'inline-flex', alignItems: 'center' }, ref: wrapRef },
         h('style', null, CSS),
         h('button', {
           type: 'button',
@@ -793,7 +851,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'egm-actions' },
             h('button', { type: 'button', className: 'egm-btn primary', onClick: openWindow }, t('details')),
             h('button', { type: 'button', className: 'egm-btn', onClick: () => setOpen(false) }, t('close'))))
-          : null)
+          : null))
     }
 
     // ---- 07-command-row.js -------------------------------------------------
@@ -881,15 +939,8 @@ window.__ModuleLoader__.load({
       const disposeLocale = ctx.locale.register(NS, DICT)
       if (typeof disposeLocale === 'function') ctx.effect(() => disposeLocale)
 
-      // The window itself lives in the root overlay: it belongs to no single slot.
-      try {
-        ctx.slots.register({
-          name: 'shell.overlay',
-          locale: NS,
-        }, (props) => h(EgmWindow, { ...props, ctx }))
-      } catch (error) {
-        console.warn(`dsh-egm-ui: window not registered: ${String(error?.message ?? error)}`)
-      }
+      // The window is not a slot of its own: the chip portals it to the body, so it
+      // cannot be lost to a slot the shell does not mount for third-party packages.
 
       // Composer chip: the only surface that knows the session, so it feeds the window.
       ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
