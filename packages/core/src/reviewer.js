@@ -135,12 +135,24 @@ export function parentRoute(agent) {
   }
 }
 
-function routeArg(args) {
-  const provider = typeof args.provider === 'string' ? args.provider.trim() : ''
-  const model = typeof args.model === 'string' ? args.model.trim() : ''
-  if (provider === '' || model === '') return undefined
-  const effort = typeof args.reasoning_effort === 'string' && args.reasoning_effort.trim() !== '' ? args.reasoning_effort.trim() : undefined
-  return { provider, model, ...effort === undefined ? {} : { reasoningEffort: effort } }
+/**
+ * Read the optional one-off route from a tool call.
+ *
+ * The schema declares `route: {provider, model, reasoning_effort}`, so that object
+ * is the canonical shape; a caller that flattens the fields onto the arguments is
+ * accepted too. A half-supplied route is an error rather than a silent fallback.
+ * @param {object} args tool arguments.
+ * @returns {{route?: object, problems: string[]}}
+ */
+export function routeArg(args) {
+  const source = args?.route !== null && typeof args?.route === 'object' ? args.route : args ?? {}
+  const provider = typeof source.provider === 'string' ? source.provider.trim() : ''
+  const model = typeof source.model === 'string' ? source.model.trim() : ''
+  if (provider === '' && model === '') return { problems: [] }
+  if (provider === '' || model === '') return { problems: ['a route needs both provider and model'] }
+  const effortValue = source.reasoning_effort ?? source.reasoningEffort ?? source.effort
+  const effort = typeof effortValue === 'string' && effortValue.trim() !== '' ? effortValue.trim() : undefined
+  return { route: { provider, model, ...effort === undefined ? {} : { reasoningEffort: effort } }, problems: [] }
 }
 
 /**
@@ -245,7 +257,9 @@ export function registerEgmTools(ctx, deps) {
         const declared = args.role === undefined ? undefined : normalizeRole(args.role)
         if (args.role !== undefined && declared === undefined) throw new Error(`egm_reviewer: unknown role "${args.role}"`)
         const role = declared ?? roleFromPrompt(prompt) ?? 'default'
-        const decision = await decideRoute({ role, agent, cwd: cwdOf(agent), override: routeArg(args), signal: exec.signal })
+        const explicit = routeArg(args)
+        if (explicit.problems.length > 0) throw new Error(`egm_reviewer: ${explicit.problems.join('; ')}`)
+        const decision = await decideRoute({ role, agent, cwd: cwdOf(agent), override: explicit.route, signal: exec.signal })
         if (decision.error !== undefined) throw new Error(`egm_reviewer unavailable: ${decision.error}`)
         const label = typeof args.description === 'string' && args.description.trim() !== '' ? args.description.trim() : `EGM Goldfish reviewer (${role})`
         const activation = await start({
@@ -292,7 +306,9 @@ export function registerEgmTools(ctx, deps) {
         const prompt = typeof args.prompt === 'string' ? args.prompt.trim() : ''
         if (prompt === '') throw new Error('egm_worker requires a non-empty prompt')
         const role = args.role === undefined ? 'worker' : normalizeRole(args.role) ?? 'worker'
-        const decision = await decideRoute({ role, agent, cwd: cwdOf(agent), override: routeArg(args), signal: exec.signal })
+        const explicit = routeArg(args)
+        if (explicit.problems.length > 0) throw new Error(`egm_reviewer: ${explicit.problems.join('; ')}`)
+        const decision = await decideRoute({ role, agent, cwd: cwdOf(agent), override: explicit.route, signal: exec.signal })
         if (decision.error !== undefined) throw new Error(`egm_worker unavailable: ${decision.error}`)
         const label = typeof args.description === 'string' && args.description.trim() !== '' ? args.description.trim() : 'EGM bootstrap worker'
         const activation = await start({ kind: 'worker', label, prompt, role, route: decision.route, agent, signal: exec.signal })

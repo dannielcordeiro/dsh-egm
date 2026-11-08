@@ -240,6 +240,33 @@ test('a reviewer starts on the configured route with a model-default token cap',
   }
 })
 
+test('a one-off route on the tool call beats every scope layer', async () => {
+  const root = await project({ '.dsh/egm.yaml': 'routing.reviewers.zoom_out: alpha/big\n' })
+  try {
+    const host = fakeHost({ config: { routing: { reviewers: { zoom_out: { provider: 'alpha', model: 'small' } } } } })
+    const agent = host.parentAgent(root)
+    const result = await host.tools.get('egm_reviewer').execute({
+      description: 'Zoom out',
+      prompt: 'Persona: /x/vendor/agents/zoom_out.md',
+      route: { provider: 'beta', model: 'small', reasoning_effort: 'high' },
+    }, { agent })
+    assert.equal(result.source, 'call')
+    assert.equal(result.route, 'beta/small#high')
+    assert.deepEqual(host.activations[0].request.agentOptions, { provider: 'beta', model: 'small', reasoningEffort: 'high', maxTokens: 4096 })
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('routeArg accepts the nested and the flattened shape, and rejects half a route', async () => {
+  const { routeArg } = await import('../src/reviewer.js')
+  assert.deepEqual(routeArg({}), { problems: [] })
+  assert.deepEqual(routeArg({ route: { provider: 'a', model: 'b', reasoning_effort: 'high' } }).route, { provider: 'a', model: 'b', reasoningEffort: 'high' })
+  assert.deepEqual(routeArg({ provider: 'a', model: 'b' }).route, { provider: 'a', model: 'b' })
+  assert.deepEqual(routeArg({ route: { provider: 'a' } }).problems, ['a route needs both provider and model'])
+  assert.deepEqual(routeArg(undefined), { problems: [] })
+})
+
 test('an unconfigured role inherits and passes no agentOptions', async () => {
   const root = await project()
   try {
