@@ -9,6 +9,7 @@
  */
 import { PHASES } from './config.js'
 import { reviewerRoles } from './personas.js'
+import { service } from './services.js'
 
 /** Which routing key a role writes to. */
 export function routingPath(role) {
@@ -20,7 +21,9 @@ export function routingPath(role) {
   return undefined
 }
 
-const NO_EDITOR = 'this profile has no configuration editor, so the profile layer cannot be written from here; add the route under `routing` in the `egm` row of cordis.patch.yml'
+const NO_EDITOR = 'this profile composes no configuration editor, so the profile layer cannot be written from here; add the route under `routing` in the `egm` row of cordis.patch.yml, or use /egm model set <role> <route> --session'
+
+const NO_ENTRY = 'this plugin row is not addressable, so it cannot write its own config; add the route under `routing` in the `egm` row of cordis.patch.yml, or use --session'
 
 export class ProfileWriter {
   /**
@@ -31,9 +34,30 @@ export class ProfileWriter {
     this.queue = Promise.resolve()
   }
 
-  /** Whether a write is possible in this composition. */
+  /**
+   * Whether a write is possible right now.
+   *
+   * Resolved per call, never cached: a service mounted after this plugin
+   * activated is still reachable later, and the boot order must not decide
+   * whether the profile layer can be written.
+   * @returns {{editor?: object, entry?: object, problem?: string}}
+   */
+  #target() {
+    const editor = service(this.ctx, 'configEditor')
+    if (editor === undefined) return { problem: NO_EDITOR }
+    const entry = this.ctx.fiber?.entry
+    if (entry === undefined) return { problem: NO_ENTRY }
+    return { editor, entry }
+  }
+
+  /** Whether the profile layer can be written in this composition. */
   available() {
-    return this.ctx.get('configEditor') !== undefined && this.ctx.fiber?.entry !== undefined
+    return this.#target().problem === undefined
+  }
+
+  /** Why the profile layer cannot be written, or `undefined`. */
+  unavailableReason() {
+    return this.#target().problem
   }
 
   /**
@@ -74,10 +98,10 @@ export class ProfileWriter {
 
   /** Serialise writes so two quick edits cannot lose one another. */
   #edit(role, mutate) {
-    const editor = this.ctx.get('configEditor')
-    const entry = this.ctx.fiber?.entry
-    if (editor === undefined || entry === undefined) return Promise.resolve({ ok: false, reason: NO_EDITOR })
+    const target = this.#target()
+    if (target.problem !== undefined) return Promise.resolve({ ok: false, reason: target.problem })
     if (routingPath(role) === undefined) return Promise.resolve({ ok: false, reason: `unknown role "${role}"` })
+    const { editor, entry } = target
     const run = async () => {
       try {
         await editor.edit(entry, (current) => {

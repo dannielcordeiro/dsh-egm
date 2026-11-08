@@ -32,6 +32,16 @@ export async function runDoctor(deps, { agent, cwd } = {}) {
   const commands = service(ctx, 'commands')
   add('commands', commands !== undefined, commands === undefined ? 'no command registry is composed' : 'command registry present', commands === undefined ? 'compose @deepseek-ai/dsh-commands' : undefined)
 
+  const editor = service(ctx, 'configEditor')
+  const addressable = ctx.fiber?.entry !== undefined
+  if (editor === undefined) {
+    add('config-editor', false, 'no configuration editor is composed, so /egm model can only write a session route', 'compose @deepseek-ai/dsh-config-editor, or use --session')
+  } else if (!addressable) {
+    add('config-editor', false, 'the configuration editor is present but this plugin row is not addressable', 'give the egm row a stable id in cordis.patch.yml')
+  } else {
+    add('config-editor', true, 'the profile layer can be written (/egm model set without --session)')
+  }
+
   const projections = service(ctx, 'sessionProjections')
   add('projection', projections !== undefined, projections === undefined ? 'no session projection registry: the run will not be tracked' : 'run projection registered', projections === undefined ? 'compose @deepseek-ai/dsh-session-projection' : undefined)
 

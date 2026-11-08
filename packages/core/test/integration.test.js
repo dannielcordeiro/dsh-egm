@@ -142,6 +142,10 @@ function fakeHost({ config = {}, llm = fakeLlm(), editConfig } = {}) {
     agents,
     childContexts,
     /** Build a parent agent as the Harness would hand it to a tool. */
+    /** Mount a service after activation, as the loader does. */
+    provide(service, value) {
+      services[service] = value
+    },
     parentAgent(cwd) {
       const agent = {
         id: 'parent-1',
@@ -537,13 +541,31 @@ test('the command refuses to write an invalid route', async () => {
   }
 })
 
-test('a profile without a configuration editor says so instead of failing silently', async () => {
+test('a profile without a configuration editor says why, and offers the session scope', async () => {
   const root = await project()
   try {
     const host = fakeHost()
     const result = await host.commands[0].handler({ agent: host.parentAgent(root), rawInput: 'model set style beta/small' })
     assert.equal(result.kind, 'error')
-    assert.match(result.text, /no profile writer/u)
+    assert.match(result.text, /composes no configuration editor/u)
+    assert.match(result.text, /--session/u)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('a configuration editor mounted after activation is still used', async () => {
+  const root = await project()
+  try {
+    // The fake host starts with no editor, like a plugin that activated before
+    // dsh-config-editor was mounted.
+    let editor
+    const host = fakeHost({ editConfig: undefined })
+    host.provide('configEditor', { edit: async (entry, mutate) => { editor = mutate({ routing: {} }); return {} } })
+    const agent = host.parentAgent(root)
+    const result = await host.commands[0].handler({ agent, rawInput: 'model set style beta/small' })
+    assert.equal(result.kind, 'success')
+    assert.deepEqual(editor.routing.reviewers.style, { provider: 'beta', model: 'small' })
   } finally {
     await rm(root, { recursive: true, force: true })
   }

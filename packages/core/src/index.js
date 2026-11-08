@@ -126,8 +126,10 @@ export function apply(ctx, raw) {
   })
 
   // ---- commands -------------------------------------------------------------
-  const writer = new ProfileWriter(ctx)
-  deps.writer = writer.available() ? writer : undefined
+  // Hand the writer over unconditionally: it resolves the configuration editor
+  // per write, so a service mounted after this plugin still works, and the
+  // command can report the precise reason when neither exists.
+  deps.writer = new ProfileWriter(ctx)
   whenService(ctx, 'commands', (commands) => {
     deps.commands = commands
     registerEgmCommand(ctx, deps)
