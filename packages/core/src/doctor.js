@@ -9,6 +9,7 @@ import { PHASES, formatRoute } from './config.js'
 import { reviewerRoles } from './personas.js'
 import { listRoutes } from './catalog.js'
 import { service } from './services.js'
+import { buildInfo } from './version.js'
 
 /** Roles checked when the caller does not name one. */
 function rolesToCheck() {
@@ -25,6 +26,9 @@ export async function runDoctor(deps, { agent, cwd } = {}) {
   const { ctx, config, router, workspace, live } = deps
   const checks = []
   const add = (id, ok, detail, action) => checks.push({ id, ok, detail, ...action === undefined ? {} : { action } })
+
+  const info = buildInfo()
+  add('plugin', true, `dsh-egm ${info.version} · upstream ${info.upstream.slice(0, 7)}`)
 
   const skills = service(ctx, 'skills')
   add('skills', skills !== undefined, skills === undefined ? 'no skill registry is composed' : 'skill registry present', skills === undefined ? 'compose @deepseek-ai/dsh-skill' : undefined)

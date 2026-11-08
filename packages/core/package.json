@@ -51,7 +51,7 @@
     }
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/guard.js && node --check src/phase-router.js && node --check src/services.js && node --check src/persist.js && node --check src/projection.js && node --check src/commands-parse.js && node --check src/isolation.js && node --check src/config.js && node --check src/personas.js && node --check src/router.js && node --check src/workspace.js && node --check src/catalog.js && node --check src/skills.js && node --check src/reviewer.js && node --check src/live.js && node --check src/projection.js && node --check src/commands.js && node --check src/tui.js && node --check src/doctor.js",
+    "check": "node --check src/index.js && node --check src/guard.js && node --check src/phase-router.js && node --check src/services.js && node --check src/persist.js && node --check src/projection.js && node --check src/commands-parse.js && node --check src/version.js && node --check src/isolation.js && node --check src/config.js && node --check src/personas.js && node --check src/router.js && node --check src/workspace.js && node --check src/catalog.js && node --check src/skills.js && node --check src/reviewer.js && node --check src/live.js && node --check src/projection.js && node --check src/commands.js && node --check src/tui.js && node --check src/doctor.js",
     "test": "node --test test/*.test.js"
   },
   "devDependencies": {

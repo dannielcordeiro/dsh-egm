@@ -37,6 +37,13 @@ Current result: **137 tests in `packages/core`, 12 in `packages/ui`, all passing
 | Profile composition (`dsh --profile dsh-tui --dump-config`, `dsh --profile web --dump-config`) | `egm`, `preset-egm-reviewer` and `egm-guard` rows present in both; `egm-ui` enabled only where a Web client host is composed |
 | Bundle install (`plugin_manager` / `dsh plugin … add`) | both packages link into both profiles without an activation error |
 
+## A stale Host process
+
+A plugin installed by `link:` is read at Host boot. Reloading the browser tab is not enough: the parser,
+the router and the writer keep running the code that was loaded when the process started. `/egm doctor`
+reports the version and the upstream pin (`plugin  dsh-egm 1.1.0 · upstream e9e1f06`) so a mismatch with the
+repository is visible before debugging a phantom.
+
 ## Not yet verified
 
 - **A live reviewer on a routed model.** Three attempts from the process that was already running when the
