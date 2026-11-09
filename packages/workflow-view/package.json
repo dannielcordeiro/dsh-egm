@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-workflow-view",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "description": "A side-panel view of the runs the DeepSeek Harness `workflow` tool starts: one row per run, its phases and every member agent, with live status, route and tokens, plus a link into each member session.",
@@ -11,7 +11,13 @@
     "url": "git+ssh://git@github.com/dannielcordeiro/dsh-egm.git",
     "directory": "packages/workflow-view"
   },
-  "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "workflow", "subagents"],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "workflow",
+    "subagents"
+  ],
   "exports": {
     ".": "./src/index.js",
     "./client": "./src/client.js",
@@ -19,7 +25,13 @@
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
-  "files": ["src", "cordis.patch.yml", "locale", "icon.svg", "README.md"],
+  "files": [
+    "src",
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg",
+    "README.md"
+  ],
   "engines": {
     "dsh": ">=0.2.1-rc.5 <0.3.0",
     "node": ">=22 <25"

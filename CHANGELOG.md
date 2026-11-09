@@ -15,6 +15,21 @@
 - The entry point is a **⧉ Workflows** action in the session header, with the run count.
 - Script narration is not durable upstream, so it is not shown; the tab says so in the UI.
 
+## 1.2.1 — 2026-11-09
+
+**Workflow view: fixes and a cleaner screen**
+
+- The toolbar (runs and filters) is always rendered. Filtering to a status with no run used to remove
+  the filters themselves, leaving no way back: the empty state now names itself and offers "Show all
+  runs".
+- **Open** and **Beside** no longer fail. The subagent chat address requires `parent` **and** `mode`,
+  and `openSession` expects `{parentSessionId, childSessionId, mode}`; both were built without the mode,
+  which produced "failed to load history" and a refused `dsh-resource://subagentchat` link. The mode now
+  comes from the subagent catalog.
+- Visual pass: sticky toolbar with counted filter pills, run list with status chips and member counts,
+  a phase rail in the timeline, member cards with a status dot, state badge and icon actions, and a
+  footer note about script output not being durable.
+
 **Repository**
 
 - `scripts/bundle-client.mjs` now builds and checks every `packages/*/src/client/*.js` collection, not

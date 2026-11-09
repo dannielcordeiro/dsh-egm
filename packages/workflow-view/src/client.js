@@ -50,39 +50,63 @@ window.__ModuleLoader__.load({
     }
 
     // ---- 01-css.js ---------------------------------------------------------
-    /** Styles for the Workflows tab. Theme tokens only. */
+    /** Styles for the Workflows tab. Theme tokens only, no hardcoded colours. */
     const CSS = `
-    .wfv-root{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary)}
-    .wfv-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .wfv-title{font-weight:600}
-    .wfv-meta{color:var(--dsw-alias-label-secondary);font-size:12px}
-    .wfv-runs{display:flex;flex-direction:column;gap:2px;max-height:180px;overflow:auto;border:.5px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md,8px);padding:4px;background:var(--dsw-alias-bg-layer-1)}
-    .wfv-run{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;border:none;border-radius:var(--dsw-radius-sm,6px);background:transparent;color:inherit;font:inherit;text-align:left;padding:4px 8px;cursor:pointer;min-width:0}
+    .wfv-root{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);padding:2px}
+    .wfv-bar{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;background:var(--dsw-alias-bg-base);border-bottom:.5px solid var(--dsw-alias-border-l1)}
+    .wfv-bar-row{display:flex;align-items:center;gap:8px;min-width:0}
+    .wfv-title{font-weight:600;font-size:13px;letter-spacing:-.01em}
+    .wfv-spacer{flex:1}
+    .wfv-count,.wfv-meta{color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums;flex:none}
+    .wfv-filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .wfv-pill{box-sizing:border-box;height:24px;padding:0 10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+    .wfv-pill:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent);color:var(--dsw-alias-label-primary)}
+    .wfv-pill[data-on="true"]{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base)}
+    .wfv-pill:disabled{opacity:.45;cursor:default}
+    .wfv-pill:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-brand-primary));outline-offset:2px}
+    .wfv-runs{display:flex;flex-direction:column;gap:1px;max-height:168px;overflow:auto;border:.5px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md,8px);padding:4px;background:var(--dsw-alias-bg-layer-1)}
+    .wfv-run{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;border:none;border-radius:var(--dsw-radius-sm,6px);background:transparent;color:inherit;font:inherit;text-align:left;padding:5px 8px;cursor:pointer;min-width:0}
     .wfv-run:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}
     .wfv-run[aria-selected="true"]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
     .wfv-run:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-brand-primary));outline-offset:-2px}
-    .wfv-run-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .wfv-run-facts{color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums;flex:none}
-    .wfv-chip{flex:none;font-size:11px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);color:var(--dsw-alias-label-secondary)}
+    .wfv-run-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+    .wfv-run-facts{color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums;flex:none;min-width:14px;text-align:right}
+    .wfv-chip{flex:none;font-size:10px;line-height:16px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
     .wfv-chip[data-s="running"]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,transparent);color:var(--dsw-alias-brand-primary)}
     .wfv-chip[data-s="failed"]{background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#dc2626) 14%,transparent);color:var(--dsw-alias-state-error-primary,#dc2626)}
     .wfv-chip[data-s="completed"]{background:color-mix(in srgb,var(--dsw-alias-success,#22c55e) 14%,transparent);color:var(--dsw-alias-success,#22c55e)}
-    .wfv-filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-    .wfv-btn{box-sizing:border-box;height:24px;padding:0 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm,6px);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}
-    .wfv-btn:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}
-    .wfv-btn[data-on="true"]{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base)}
-    .wfv-timeline{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px}
-    .wfv-phase{display:flex;flex-direction:column;gap:4px}
-    .wfv-phase-head{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .wfv-timeline{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding:2px 0}
+    .wfv-phase{display:flex;flex-direction:column;gap:6px}
+    .wfv-phase-head{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:var(--dsw-alias-bg-base);padding:2px 0}
+    .wfv-phase-pill{flex:none;font-size:10px;line-height:16px;padding:0 8px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent);color:var(--dsw-alias-label-secondary);text-transform:uppercase;letter-spacing:.06em}
+    .wfv-phase-count{flex:none;font-size:10px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
     .wfv-phase-line{flex:1;height:1px;background:var(--dsw-alias-border-l1)}
-    .wfv-member{display:flex;align-items:flex-start;gap:8px;padding:5px 6px;border-radius:var(--dsw-radius-sm,6px);border:.5px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);min-width:0}
+    .wfv-phase-body{display:flex;flex-direction:column;gap:4px;padding-left:2px;border-left:1px solid var(--dsw-alias-border-l1);margin-left:6px;padding-left:10px}
+    .wfv-member{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:var(--dsw-radius-sm,6px);border:.5px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);min-width:0}
+    .wfv-member:hover{border-color:var(--dsw-alias-border-l2)}
     .wfv-member[data-s="failed"]{border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary,#dc2626) 40%,transparent)}
-    .wfv-glyph{flex:none;width:14px;text-align:center}
-    .wfv-member-main{flex:1;min-width:0;display:flex;flex-direction:column}
-    .wfv-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .wfv-dot{flex:none;width:7px;height:7px;margin-top:6px;border-radius:50%;background:var(--dsw-alias-label-tertiary,#9ca3af)}
+    .wfv-dot[data-s="running"]{background:var(--dsw-alias-brand-primary);animation:wfv-pulse 1.6s ease-in-out infinite}
+    .wfv-dot[data-s="completed"]{background:var(--dsw-alias-success,#22c55e)}
+    .wfv-dot[data-s="failed"]{background:var(--dsw-alias-state-error-primary,#dc2626)}
+    @keyframes wfv-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    .wfv-member-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+    .wfv-member-title{display:flex;align-items:center;gap:8px;min-width:0}
+    .wfv-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+    .wfv-state{flex:none;font-size:10px;line-height:16px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent);color:var(--dsw-alias-label-tertiary)}
+    .wfv-state[data-s="running"]{color:var(--dsw-alias-brand-primary)}
+    .wfv-state[data-s="failed"]{color:var(--dsw-alias-state-error-primary,#dc2626)}
     .wfv-facts{color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .wfv-actions{flex:none;display:flex;gap:4px}
-    .wfv-empty{color:var(--dsw-alias-label-secondary);font-size:12px;padding:12px 4px}
+    .wfv-icon{box-sizing:border-box;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:.5px solid transparent;border-radius:var(--dsw-radius-sm,6px);background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:13px;line-height:1;cursor:pointer}
+    .wfv-icon:hover:not(:disabled){border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}
+    .wfv-icon:disabled{opacity:.35;cursor:default}
+    .wfv-icon:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-brand-primary));outline-offset:1px}
+    .wfv-btn{box-sizing:border-box;height:26px;padding:0 10px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm,6px);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;margin-top:8px}
+    .wfv-btn:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}
+    .wfv-empty{color:var(--dsw-alias-label-secondary);font-size:12px;padding:10px 2px}
+    .wfv-empty-box{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;border:.5px dashed var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md,8px);background:var(--dsw-alias-bg-layer-1)}
+    .wfv-note{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:15px;border-top:.5px solid var(--dsw-alias-border-l1);padding-top:6px}
     .wfv-error{color:var(--dsw-alias-state-error-primary,#dc2626);font-size:12px}
     `
 
@@ -97,6 +121,8 @@ window.__ModuleLoader__.load({
         headerTitle: 'Runs started by the workflow tool in this session',
         runs: 'runs',
         noRuns: 'No workflow run in this session yet. The workflow tool records one run per execution.',
+        noMatch: 'No run matches this filter.',
+        showAll: 'Show all runs',
         noMembers: 'This run recorded no members.',
         noPhase: 'no phase',
         phase: 'phase',
@@ -123,6 +149,8 @@ window.__ModuleLoader__.load({
         headerTitle: 'Execuções iniciadas pela tool workflow nesta sessão',
         runs: 'execuções',
         noRuns: 'Nenhuma execução de workflow nesta sessão ainda. A tool grava uma execução por chamada.',
+        noMatch: 'Nenhuma execução corresponde a este filtro.',
+        showAll: 'Mostrar todas',
         noMembers: 'Esta execução não registrou membros.',
         noPhase: 'sem fase',
         phase: 'fase',
@@ -181,6 +209,23 @@ window.__ModuleLoader__.load({
       const minutes = Math.floor(seconds / 60)
       if (minutes < 60) return `${minutes}m${String(seconds % 60).padStart(2, '0')}s`
       return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}m`
+    }
+
+    /** Modes the subagent chat resource accepts. */
+    const MODES = new Set(['one-shot', 'continuable', 'unknown'])
+
+    /** Address the sidebar chat tab accepts; both `parent` and `mode` are required. */
+    function chatAddress({ parentSessionId, childSessionId, mode }) {
+      if (typeof childSessionId !== 'string' || childSessionId === '') throw new Error('a child session is required')
+      const effective = MODES.has(mode) ? mode : 'continuable'
+      const query = new URLSearchParams({ parent: parentSessionId ?? '', mode: effective })
+      return `dsh-resource://subagentchat/session/${encodeURIComponent(childSessionId)}?${query}`
+    }
+
+    /** Payload `uiWorkspace.openSession` expects. */
+    function openTarget({ parentSessionId, childSessionId, mode }) {
+      if (typeof childSessionId !== 'string' || childSessionId === '') throw new Error('a child session is required')
+      return { parentSessionId, childSessionId, mode: MODES.has(mode) ? mode : 'continuable' }
     }
 
     /** Route text of one catalog entry. */
@@ -256,6 +301,7 @@ window.__ModuleLoader__.load({
             const durationMs = started === null ? null : (ended ?? now) - started
             return {
               seq: agent.seq,
+              mode: MODES.has(entry?.mode) ? entry.mode : 'continuable',
               label: agent.label || entry?.label || (agent.childId ?? '').slice(0, 8) || `#${agent.seq}`,
               phase: agent.phase ?? null,
               childId: agent.childId ?? null,
@@ -296,14 +342,76 @@ window.__ModuleLoader__.load({
     /**
      * The Workflows tab body.
      *
-     * Reads three views of the same session — our `workflowRuns` projection, the
-     * host's `subagentCatalog` and the client session store — and renders a run
-     * selector plus a phase-grouped timeline. No timer, no command: opening the tab
-     * costs nothing to the transcript.
+     * Layout rules learned the hard way:
+     *   - the toolbar (runs + filters) is ALWAYS rendered, so a filter that matches
+     *     nothing never traps the user in an empty state;
+     *   - empty states are distinct: no run at all, filter matched nothing (with a
+     *     "show all" escape), and a run with no members;
+     *   - every action has an accessible name, and the child link carries the `mode`
+     *     the subagent chat resource requires.
+     *
+     * Rendering is split into small functions so the tree stays readable and no JSX
+     * nesting has to be counted by hand.
      */
 
     /** Session the tab should show, published by the header action. */
     let activeSession
+
+    /** Filters in display order, with their dictionary key. */
+    const FILTERS = [
+      { id: 'all', label: 'all' },
+      { id: 'running', label: 'filterRunning' },
+      { id: 'failed', label: 'filterFailed' },
+    ]
+
+    /** One member row: status dot, label, facts and the two navigation actions. */
+    function renderMember(member, { t, navigate }) {
+      return h('article', { key: `${member.phase ?? '-'}:${member.seq}`, className: 'wfv-member', 'data-s': member.status },
+        h('span', { className: 'wfv-dot', 'data-s': member.status, 'aria-hidden': true }),
+        h('div', { className: 'wfv-member-main' },
+          h('div', { className: 'wfv-member-title' },
+            h('span', { className: 'wfv-label' }, member.label),
+            h('span', { className: 'wfv-state', 'data-s': member.status }, t(member.status))),
+          h('div', { className: 'wfv-facts' }, memberFacts(member, t))),
+        h('div', { className: 'wfv-actions' },
+          h('button', {
+            type: 'button',
+            className: 'wfv-icon',
+            title: t('open'),
+            'aria-label': `${t('open')} ${member.label}`,
+            disabled: member.childId === null,
+            onClick: () => navigate(member, false),
+          }, '↗'),
+          h('button', {
+            type: 'button',
+            className: 'wfv-icon',
+            title: t('openAside'),
+            'aria-label': `${t('openAside')} ${member.label}`,
+            disabled: member.childId === null,
+            onClick: () => navigate(member, true),
+          }, '⇥')))
+    }
+
+    /** One phase section. */
+    function renderGroup(group, context) {
+      return h('section', { key: group.phase ?? '__none__', className: 'wfv-phase' },
+        h('header', { className: 'wfv-phase-head' },
+          h('span', { className: 'wfv-phase-pill' }, group.label),
+          h('span', { className: 'wfv-phase-count' }, String(group.members.length)),
+          h('span', { className: 'wfv-phase-line' })),
+        h('div', { className: 'wfv-phase-body' }, ...group.members.map((member) => renderMember(member, context))))
+    }
+
+    /** The empty or filled body area. */
+    function renderBody({ t, runs, allRuns, current, filter, setFilter, navigate }) {
+      if (runs.length === 0) {
+        return h('div', { className: 'wfv-empty-box' },
+          h('div', null, allRuns.length === 0 ? t('noRuns') : t('noMatch')),
+          allRuns.length === 0 ? null : h('button', { type: 'button', className: 'wfv-btn', onClick: () => setFilter('all') }, t('showAll')))
+      }
+      if (current === null || current.groups.length === 0) return h('div', { className: 'wfv-empty' }, t('noMembers'))
+      return h('div', { className: 'wfv-timeline' }, ...current.groups.map((group) => renderGroup(group, { t, navigate })))
+    }
 
     function WorkflowsTab({ ctx, t, sessionId, useProjection }) {
       const runsView = typeof useProjection === 'function' ? useProjection('workflowRuns') : undefined
@@ -314,79 +422,74 @@ window.__ModuleLoader__.load({
       const [selected, setSelected] = useState(null)
       const [error, setError] = useState(null)
 
+      const allRuns = useMemo(
+        () => buildTab({ view: runsView, catalog, sessions, filter: 'all', noPhaseLabel: t('noPhase') }),
+        [runsView, catalog, sessions, t],
+      )
       const runs = useMemo(
         () => buildTab({ view: runsView, catalog, sessions, filter, noPhaseLabel: t('noPhase') }),
         [runsView, catalog, sessions, filter, t],
       )
-
       const current = runs.find((run) => run.runId === selected) ?? runs[0] ?? null
+      const counts = {
+        all: allRuns.length,
+        running: allRuns.filter((run) => run.status === 'running' || run.counts.running > 0).length,
+        failed: allRuns.filter((run) => run.counts.failed > 0).length,
+      }
 
-      const openMember = (childId, aside) => {
-        if (childId === null || childId === undefined) return
+      const navigate = (member, aside) => {
+        if (member.childId === null) return
+        setError(null)
         try {
+          const payload = { parentSessionId: target, childSessionId: member.childId, mode: member.mode }
           if (aside === true) {
-            serviceOf(ctx, 'sidebarRight')?.openResource?.(`dsh-resource://subagentchat/session/${encodeURIComponent(childId)}?parent=${encodeURIComponent(target ?? '')}`, { kind: 'subagentchat', preferNewPane: true })
+            serviceOf(ctx, 'sidebarRight')?.openResource?.(chatAddress(payload), { kind: 'subagentchat', preferNewPane: true })
           } else {
-            serviceOf(ctx, 'uiWorkspace')?.openSession?.({ parentSessionId: target, childSessionId: childId })
+            serviceOf(ctx, 'uiWorkspace')?.openSession?.(openTarget(payload))
           }
         } catch (failure) {
           setError(failure instanceof Error ? failure.message : String(failure))
         }
       }
 
-      if (runsView === undefined) return h('div', { className: 'wfv-root' }, h('style', null, CSS), h('div', { className: 'wfv-empty' }, t('noRuns')))
-      if (runs.length === 0) {
-        return h('div', { className: 'wfv-root' },
-          h('style', null, CSS),
-          h('div', { className: 'wfv-head' }, h('span', { className: 'wfv-title' }, t('tab'))),
-          h('div', { className: 'wfv-empty' }, t('noRuns')))
-      }
+      const toolbar = h('div', { className: 'wfv-bar' },
+        h('div', { className: 'wfv-bar-row' },
+          h('span', { className: 'wfv-title' }, `⧉ ${t('tab')}`),
+          h('span', { className: 'wfv-spacer' }),
+          h('span', { className: 'wfv-count' }, `${counts.all} ${t('runs')}`)),
+        h('div', { className: 'wfv-filters', role: 'group', 'aria-label': t('tab') },
+          ...FILTERS.map((entry) => h('button', {
+            key: entry.id,
+            type: 'button',
+            className: 'wfv-pill',
+            'data-on': filter === entry.id,
+            'aria-pressed': filter === entry.id,
+            disabled: entry.id !== 'all' && counts[entry.id] === 0 && filter !== entry.id,
+            onClick: () => setFilter(entry.id),
+          }, entry.id === 'all' || counts[entry.id] === 0 ? t(entry.label) : `${t(entry.label)} ${counts[entry.id]}`))))
+
+      const body = renderBody({ t, runs, allRuns, current, filter, setFilter, navigate })
 
       return h('div', { className: 'wfv-root' },
         h('style', null, CSS),
-        h('div', { className: 'wfv-head' },
-          h('span', { className: 'wfv-title' }, t('tab')),
-          h('span', { className: 'wfv-meta' }, `${runs.length} ${t('runs')}`)),
+        toolbar,
         error === null ? null : h('div', { className: 'wfv-error', role: 'alert' }, error),
-
-        h('div', { className: 'wfv-runs', role: 'listbox', 'aria-label': t('runs') },
+        counts.all === 0 ? null : h('div', { className: 'wfv-runs', role: 'listbox', 'aria-label': t('runs') },
           ...runs.map((run) => h('button', {
             key: run.runId,
             type: 'button',
             role: 'option',
             'aria-selected': current?.runId === run.runId,
             className: 'wfv-run',
+            title: run.name || run.runId,
             onClick: () => setSelected(run.runId),
           },
-            h('span', { className: 'wfv-run-name', title: run.runId }, run.name || run.runId.slice(0, 8)),
-            run.counts.failed === 0 ? null : h('span', { className: 'wfv-chip', 'data-s': 'failed' }, `${run.counts.failed} ${t('failed')}`),
-            h('span', { className: 'wfv-chip', 'data-s': run.status }, t(run.status === 'running' ? 'running' : run.status)),
-            h('span', { className: 'wfv-run-facts' }, `${run.counts.total} ${t('members')}`)))),
-
-        h('div', { className: 'wfv-filters' },
-          ...[['all', t('all')], ['running', t('filterRunning')], ['failed', t('filterFailed')]].map(([value, label]) => h('button', {
-            key: value,
-            type: 'button',
-            className: 'wfv-btn',
-            'data-on': filter === value,
-            onClick: () => setFilter(value),
-          }, label)),
-          h('span', { className: 'wfv-meta' }, t('logsNote'))),
-
-        h('div', { className: 'wfv-timeline' },
-          current === null ? null : current.groups.map((group) => h('div', { key: group.phase ?? '__none__', className: 'wfv-phase' },
-            h('div', { className: 'wfv-phase-head' },
-              h('span', null, group.label),
-              h('span', { className: 'wfv-phase-line' })),
-            ...group.members.map((member) => h('div', { key: `${member.phase ?? '-'}:${member.seq}`, className: 'wfv-member', 'data-s': member.status },
-              h('span', { className: 'wfv-glyph', 'aria-hidden': true }, member.glyph),
-              h('span', { className: 'wfv-member-main' },
-                h('span', { className: 'wfv-label' }, member.label),
-                h('span', { className: 'wfv-facts' }, memberFacts(member, t))),
-              h('span', { className: 'wfv-actions' },
-                h('button', { type: 'button', className: 'wfv-btn', title: t('open'), disabled: member.childId === null, onClick: () => openMember(member.childId, false) }, t('open')),
-                h('button', { type: 'button', className: 'wfv-btn', title: t('openAside'), disabled: member.childId === null, onClick: () => openMember(member.childId, true) }, '⇥')))))),
-          current === null ? h('div', { className: 'wfv-empty' }, t('noMembers')) : null))
+            h('span', { className: 'wfv-run-name' }, run.name || run.runId.slice(0, 8)),
+            run.counts.failed === 0 ? null : h('span', { className: 'wfv-chip', 'data-s': 'failed' }, String(run.counts.failed)),
+            h('span', { className: 'wfv-chip', 'data-s': run.status }, t(run.status)),
+            h('span', { className: 'wfv-run-facts' }, String(run.counts.total))))),
+        body,
+        h('div', { className: 'wfv-note' }, t('logsNote')))
     }
 
     /** Header action: count of runs, and the way into the tab. */
@@ -472,7 +575,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Helpers the test suite exercises without a browser. */
-    testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus }
+    testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget }
 
     return { inject, apply, __test: testApi }
   },

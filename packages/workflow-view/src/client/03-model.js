@@ -35,6 +35,23 @@ function formatDuration(ms) {
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}m`
 }
 
+/** Modes the subagent chat resource accepts. */
+const MODES = new Set(['one-shot', 'continuable', 'unknown'])
+
+/** Address the sidebar chat tab accepts; both `parent` and `mode` are required. */
+function chatAddress({ parentSessionId, childSessionId, mode }) {
+  if (typeof childSessionId !== 'string' || childSessionId === '') throw new Error('a child session is required')
+  const effective = MODES.has(mode) ? mode : 'continuable'
+  const query = new URLSearchParams({ parent: parentSessionId ?? '', mode: effective })
+  return `dsh-resource://subagentchat/session/${encodeURIComponent(childSessionId)}?${query}`
+}
+
+/** Payload `uiWorkspace.openSession` expects. */
+function openTarget({ parentSessionId, childSessionId, mode }) {
+  if (typeof childSessionId !== 'string' || childSessionId === '') throw new Error('a child session is required')
+  return { parentSessionId, childSessionId, mode: MODES.has(mode) ? mode : 'continuable' }
+}
+
 /** Route text of one catalog entry. */
 function routeOf(entry) {
   if (entry?.agentProvider === undefined || entry?.agentModel === undefined) return null
@@ -108,6 +125,7 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
         const durationMs = started === null ? null : (ended ?? now) - started
         return {
           seq: agent.seq,
+          mode: MODES.has(entry?.mode) ? entry.mode : 'continuable',
           label: agent.label || entry?.label || (agent.childId ?? '').slice(0, 8) || `#${agent.seq}`,
           phase: agent.phase ?? null,
           childId: agent.childId ?? null,

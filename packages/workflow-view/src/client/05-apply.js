@@ -53,4 +53,4 @@ function apply(ctx) {
 }
 
 /** Helpers the test suite exercises without a browser. */
-testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus }
+testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget }

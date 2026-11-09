@@ -190,6 +190,45 @@ test('an unknown member status is shown as unknown, never as completed', () => {
   assert.equal(memberStatus('completed', { running: true }), 'running')
 })
 
+test('the child link carries parent and mode, which the sidebar refuses without', () => {
+  const { plugin } = loadPlugin()
+  const { chatAddress, openTarget } = plugin.__test
+  assert.equal(
+    chatAddress({ parentSessionId: 'p1', childSessionId: 'c1', mode: 'continuable' }),
+    'dsh-resource://subagentchat/session/c1?parent=p1&mode=continuable',
+  )
+  assert.equal(chatAddress({ parentSessionId: 'p1', childSessionId: 'c1' }), 'dsh-resource://subagentchat/session/c1?parent=p1&mode=continuable')
+  assert.equal(chatAddress({ parentSessionId: 'p1', childSessionId: 'a/b', mode: 'one-shot' }), 'dsh-resource://subagentchat/session/a%2Fb?parent=p1&mode=one-shot')
+  assert.throws(() => chatAddress({ parentSessionId: 'p1' }), /child session/u)
+  assert.deepEqual(openTarget({ parentSessionId: 'p1', childSessionId: 'c1', mode: 'one-shot' }), { parentSessionId: 'p1', childSessionId: 'c1', mode: 'one-shot' })
+  assert.equal(openTarget({ parentSessionId: 'p1', childSessionId: 'c1' }).mode, 'continuable')
+  assert.throws(() => openTarget({ parentSessionId: 'p1' }), /child session/u)
+})
+
+test('the member carries the mode the catalog recorded', () => {
+  const { plugin } = loadPlugin()
+  const { buildTab } = plugin.__test
+  const view = { runs: [{ runId: 'r1', name: 'a', status: 'completed', agents: [{ seq: 1, label: 'x', phase: null, childId: 'c1', status: 'completed' }] }] }
+  const [run] = buildTab({ view, catalog: [{ id: 'c1', mode: 'one-shot' }], sessions: {}, noPhaseLabel: 'none' })
+  assert.equal(run.members[0].mode, 'one-shot')
+  const [fallback] = buildTab({ view, catalog: [], sessions: {}, noPhaseLabel: 'none' })
+  assert.equal(fallback.members[0].mode, 'continuable')
+})
+
+test('the toolbar is rendered before any empty state', () => {
+  const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
+  const body = bundle.slice(bundle.indexOf('function renderBody'), bundle.indexOf('function WorkflowsTab'))
+  assert.ok(body.includes('noMatch'), 'an empty filter names its state')
+  assert.ok(body.includes('showAll'), 'an empty filter offers the way back')
+
+  const tab = bundle.slice(bundle.indexOf('function WorkflowsTab'), bundle.indexOf('function WorkflowsHeaderAction'))
+  const toolbarAt = tab.indexOf('const toolbar =')
+  const returnAt = tab.indexOf('return h(')
+  assert.ok(toolbarAt > 0 && returnAt > toolbarAt, 'the toolbar is built once, before the return')
+  assert.ok(tab.indexOf('toolbar,') > returnAt, 'the toolbar is always part of the tree')
+  assert.equal(tab.includes('if (runsView === undefined) return'), false, 'no early return may skip the filters')
+})
+
 test('the manifest declares one web row and the client half', () => {
   assert.equal(manifest.name, '@local/dsh-workflow-view')
   assert.equal(manifest.dsh.client.platform, 'web')
