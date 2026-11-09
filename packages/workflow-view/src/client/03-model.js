@@ -105,18 +105,59 @@ function routeOf(entry) {
   return `${entry.agentProvider}/${entry.agentModel}${effort === undefined || effort === null ? '' : `#${effort}`}`
 }
 
-/** Token total of one session summary. */
+/**
+ * Token total of one session summary.
+ *
+ * `tokenUsage`'s wire view is the bucket object itself (`{uncachedInputTokens,
+ * outputTokens, …}`), not `{totals}`; the older shape is still accepted so a
+ * differing Host build cannot blank the number.
+ */
 function tokensOf(summary) {
-  const totals = summary?.projectionValues?.tokenUsage?.totals
-  if (totals === undefined) return null
-  const sum = (totals.uncachedInputTokens ?? 0) + (totals.outputTokens ?? 0)
+  const wire = summary?.projectionValues?.tokenUsage
+  if (wire === undefined || wire === null) return null
+  const buckets = wire.totals ?? wire
+  const sum = (buckets.uncachedInputTokens ?? 0) + (buckets.outputTokens ?? 0)
   return sum > 0 ? sum : null
 }
 
-/** Member status: the live flag wins, then the recorded outcome. */
+/** Route text of one recorded model selection. */
+function selectionRoute(selection) {
+  if (selection?.provider === undefined || selection?.model === undefined) return null
+  const effort = selection.reasoningEffort
+  return `${selection.provider}/${selection.model}${effort === undefined || effort === null ? '' : `#${effort}`}`
+}
+
+/**
+ * The model that actually ran this member: the child session's own
+ * `modelSelection` fold (`lastUsed`, the last request header), not the route the
+ * caller asked for.
+ */
+function effectiveRouteOf(summary) {
+  const selection = summary?.projectionValues?.modelSelection
+  return selectionRoute(selection?.lastUsed) ?? selectionRoute(selection?.next)
+}
+
+/**
+ * Member status. Only the live session flag may say `running`; a durable
+ * lifecycle that never closed means the worker was interrupted (a crash, a
+ * reboot), and a member with no record at all stays `unknown`.
+ */
 function memberStatus(recorded, summary) {
   if (summary?.running === true) return 'running'
-  return recorded ?? 'unknown'
+  if (recorded === 'running' || recorded === 'open' || recorded === null || recorded === undefined) {
+    return summary === undefined ? 'unknown' : 'interrupted'
+  }
+  return recorded
+}
+
+/** Run status: a recorded reason wins, else live members, else interrupted. */
+function runStatus(run, members) {
+  const recorded = run.stopReason ?? run.status
+  if (recorded === 'running') return 'running'
+  if (recorded !== null && recorded !== undefined && recorded !== 'open') return recorded
+  if (members.some((member) => member.status === 'running')) return 'running'
+  if (members.length === 0) return 'unknown'
+  return 'interrupted'
 }
 
 /** Index catalog entries by child id. */
@@ -233,6 +274,8 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
         const started = agent.startedAt ?? summary?.createdAt ?? null
         const ended = agent.endedAt ?? null
         const durationMs = started === null ? null : (ended ?? (status === 'running' ? now : started)) - started
+        const requestedRoute = routeOf(entry)
+        const effectiveRoute = effectiveRouteOf(summary)
         return {
           seq: agent.seq,
           mode: MODES.has(entry?.mode) ? entry.mode : 'continuable',
@@ -241,7 +284,9 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
           childId: agent.childId ?? null,
           status,
           glyph: GLYPH[status] ?? '·',
-          route: routeOf(entry),
+          route: effectiveRoute ?? requestedRoute,
+          requestedRoute,
+          routeIsEffective: effectiveRoute !== null,
           tokens: tokensOf(summary),
           durationMs: status === 'running' || status === 'unknown' ? null : durationMs,
           rawDurationMs: durationMs,
@@ -255,6 +300,7 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
       const progress = runProgress({ agents: withBars })
       return {
         ...run,
+        status: runStatus(run, withBars),
         members: withBars,
         groups,
         phases: aggregatePhases(groups),
@@ -273,7 +319,7 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
 /** One-line fact string for a member row. */
 function memberFacts(member, t, { now = Date.now() } = {}) {
   return [
-    member.route ?? t('noRoute'),
+    member.route === null ? t('noRoute') : member.routeIsEffective ? member.route : `${member.route} (${t('requested')})`,
     formatTokens(member.tokens) === null ? null : `${formatTokens(member.tokens)} ${t('tokens')}`,
     formatDuration(member.durationMs),
     member.status === 'running' ? `${t('running')} ${formatRelative(member.startedAt, now) ?? ''}`.trim() : null,

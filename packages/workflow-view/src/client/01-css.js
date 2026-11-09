@@ -117,6 +117,7 @@ const CSS_CONTROLS = `
 .wfv-chip{flex:none;font-size:10px;line-height:16px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .wfv-chip[data-s="completed"]{background:color-mix(in srgb,var(--dsw-alias-state-success-primary) 14%,transparent);color:var(--dsw-alias-state-success-primary)}
 .wfv-chip[data-s="running"]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,transparent);color:var(--dsw-alias-brand-primary)}
+.wfv-chip[data-s="interrupted"],.wfv-chip[data-s="cancelled"]{background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 16%,transparent);color:var(--dsw-alias-state-warn-primary)}
 .wfv-chip[data-s="failed"]{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 14%,transparent);color:var(--dsw-alias-state-error-primary)}
 .wfv-empty{color:var(--dsw-alias-label-secondary);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 12px;text-align:center}
 .wfv-empty svg{opacity:.55}

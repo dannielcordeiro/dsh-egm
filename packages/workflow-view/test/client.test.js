@@ -184,13 +184,53 @@ test('the run filter selects by status and by failed members', () => {
   assert.deepEqual(buildTab({ view, catalog: [], sessions: {}, filter: 'failed', noPhaseLabel: 'none' }).map((run) => run.runId), ['r1'])
 })
 
-test('an unknown member status is shown as unknown, never as completed', () => {
+test('a member killed by a restart is interrupted, not running', () => {
   const { plugin } = loadPlugin()
   const { memberStatus } = plugin.__test
-  assert.equal(memberStatus(null, undefined), 'unknown')
-  assert.equal(memberStatus(undefined, {}), 'unknown')
+  assert.equal(memberStatus(null, undefined), 'unknown', 'no record and no session')
+  assert.equal(memberStatus('open', { running: false }), 'interrupted', 'never closed and not live')
+  assert.equal(memberStatus('open', {}), 'interrupted')
+  assert.equal(memberStatus('open', { running: true }), 'running', 'the live flag still wins')
   assert.equal(memberStatus('failed', undefined), 'failed')
   assert.equal(memberStatus('completed', { running: true }), 'running')
+})
+
+test('runs follow the same rule: no stop reason, no live member, interrupted', () => {
+  const { plugin } = loadPlugin()
+  const { buildTab } = plugin.__test
+  const build = (run, sessions = {}) => buildTab({ view: { runs: [run] }, catalog: [], sessions, noPhaseLabel: 'none' })[0]
+  assert.equal(build({ runId: 'r', status: 'open', stopReason: null, agents: [{ seq: 1, status: 'open', childId: null }] }).status, 'interrupted')
+  const live = build({ runId: 'r', status: 'open', stopReason: null, agents: [{ seq: 1, status: 'open', childId: 'c1' }] }, { byId: { c1: { running: true } } })
+  assert.equal(live.status, 'running', 'a member the shell reports live makes the run live')
+  assert.equal(live.members[0].status, 'running')
+  assert.equal(build({ runId: 'r', status: 'completed', stopReason: 'completed', agents: [] }).status, 'completed')
+})
+
+test('tokens come from the flat tokenUsage view and the model from modelSelection', () => {
+  const { plugin } = loadPlugin()
+  const { buildTab } = plugin.__test
+  const view = { runs: [{ runId: 'r1', name: 'a', status: 'completed', stopReason: 'completed', agents: [
+    { seq: 1, label: 'w', phase: null, childId: 'c1', status: 'completed' },
+  ] }] }
+  const catalog = [{ id: 'c1', mode: 'continuable', agentProvider: 'deepseek-official', agentModel: 'deepseek-flash' }]
+  const sessions = { byId: { c1: {
+    running: false,
+    projectionValues: {
+      tokenUsage: { uncachedInputTokens: 1_200, outputTokens: 300, cacheReadTokens: 5_000, cacheWriteTokens: 0 },
+      modelSelection: { lastUsed: { provider: 'anthropic', model: 'claude-sonnet-5-5', reasoningEffort: 'high' }, next: null },
+    },
+  } } }
+  const [run] = buildTab({ view, catalog, sessions, noPhaseLabel: 'none' })
+  const member = run.members[0]
+  assert.equal(member.tokens, 1_500, 'input plus output, from the flat bucket object')
+  assert.equal(member.route, 'anthropic/claude-sonnet-5-5#high', 'the model that actually ran')
+  assert.equal(member.requestedRoute, 'deepseek-official/deepseek-flash')
+  assert.equal(member.routeIsEffective, true)
+
+  const noUsage = buildTab({ view, catalog, sessions: { byId: { c1: { running: false, projectionValues: {} } } }, noPhaseLabel: 'none' })[0].members[0]
+  assert.equal(noUsage.tokens, null)
+  assert.equal(noUsage.route, 'deepseek-official/deepseek-flash', 'falls back to the requested route')
+  assert.equal(noUsage.routeIsEffective, false)
 })
 
 test('the child link carries parent and mode, which the sidebar refuses without', () => {

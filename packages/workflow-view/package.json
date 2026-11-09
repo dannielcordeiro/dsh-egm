@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-workflow-view",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "type": "module",
   "description": "A side-panel view of the runs the DeepSeek Harness `workflow` tool starts: one row per run, its phases and every member agent, with live status, route and tokens, plus a link into each member session.",

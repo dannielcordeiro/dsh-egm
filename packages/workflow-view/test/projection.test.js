@@ -37,7 +37,7 @@ const fold = (events) => events.reduce((state, event) => applyEvent(state, event
 
 test('the projection key and version are stable', () => {
   assert.equal(PROJECTION_KEY, 'workflowRuns')
-  assert.equal(STATE_VERSION, 1)
+  assert.equal(STATE_VERSION, 2)
 })
 
 test('the real fixture folds into four runs with their members', () => {
@@ -51,12 +51,12 @@ test('the real fixture folds into four runs with their members', () => {
   assert.deepEqual(byName['fase0-etapa-b'].agents.map((agent) => agent.seq), [1, 2, 3])
 })
 
-test('a run with no run-end stays visible and running', () => {
+test('a run with no run-end stays visible and open, never running', () => {
   const view = createView(fold(FIXTURE))
   const doc = view.runs.find((run) => run.runId === 'r-doc')
-  assert.equal(doc.status, 'running')
+  assert.equal(doc.status, 'open', 'the log cannot tell a live run from a killed one')
   assert.equal(doc.endedAt, null)
-  assert.equal(doc.agents[0].status, 'running')
+  assert.equal(doc.agents[0].status, 'open')
 })
 
 test('a failed member keeps its outcome inside a completed run', () => {

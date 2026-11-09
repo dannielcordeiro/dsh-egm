@@ -30,6 +30,22 @@
   a phase rail in the timeline, member cards with a status dot, state badge and icon actions, and a
   footer note about script output not being durable.
 
+## 1.4.0 — 2026-11-09
+
+**Workflow view: tokens, honest status, and the model that actually ran**
+
+- **Tokens now appear.** `tokenUsage`'s wire view is the bucket object itself
+  (`{uncachedInputTokens, outputTokens, ...}`), not `{totals}`; reading `.totals` silently produced nothing.
+  The older shape is still accepted.
+- **A killed worker no longer reads "running".** The projection derives `open` - never `running` - for a
+  lifecycle with no `agent-end`/`run-end`, because the log cannot tell a live worker from one killed by a
+  crash or a reboot. Only the shell's live session flag may claim `running`; otherwise the member is
+  `interrupted` (or `unknown` with no session at all). `stateVersion` is now 2, so old checkpoints are
+  discarded.
+- **Per-member effective model.** Each member shows the model its child session really used
+  (`modelSelection.lastUsed`, folded from the request header), falling back to the route the caller asked
+  for, marked `(requested)`. The detail block lists both when they differ.
+
 ## 1.3.0 — 2026-11-09
 
 **Workflow view: a designed screen**

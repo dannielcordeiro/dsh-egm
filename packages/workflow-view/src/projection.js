@@ -14,8 +14,12 @@
 /** Projection key the browser reads with `useProjection`. */
 export const PROJECTION_KEY = 'workflowRuns'
 
-/** Bump when the state shape or the fold semantics change. */
-export const STATE_VERSION = 1
+/**
+ * Bump when the state shape or the derived view changes. Version 2 derives
+ * `open` for a lifecycle that never closed, so a checkpoint written under the
+ * old `running` derivation is discarded instead of trusted.
+ */
+export const STATE_VERSION = 2
 
 /** Initial state for an empty session. */
 export function initState() {
@@ -90,9 +94,15 @@ export function applyEvent(state, event) {
   }
 }
 
-/** Status of one member, from its own lifecycle only. */
+/**
+ * Status of one member, from its own lifecycle only.
+ *
+ * A member with no `agent-end` is `open`, never `running`: the log cannot tell a
+ * live worker from one killed by a crash or a reboot, and only the client's live
+ * session flag may claim `running`.
+ */
 function agentStatus(agent) {
-  if (agent.outcome === undefined) return 'running'
+  if (agent.outcome === undefined) return 'open'
   if (agent.outcome === 'completed') return 'completed'
   if (agent.outcome === 'failed') return 'failed'
   return agent.outcome
@@ -127,7 +137,7 @@ export function createView(state, options = {}) {
         startedAt: run.startedAt ?? null,
         endedAt: run.endedAt ?? null,
         stopReason: run.stopReason ?? null,
-        status: run.endedAt === null || run.endedAt === undefined ? 'running' : run.stopReason ?? 'completed',
+        status: run.endedAt === null || run.endedAt === undefined ? 'open' : run.stopReason ?? 'completed',
         agents,
         failed: agents.filter((agent) => agent.status === 'failed').length,
       }

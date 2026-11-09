@@ -35,8 +35,13 @@ never pretends to have the script output.
   progress bar and a colour legend.
 - **Phase timeline**: each member gets a proportional **duration bar** placed inside the run's span, so
   parallel members are visible; a running member extends to now with a hatched bar.
-- **Member detail** (click the label): seq, child session id with copy, route, mode, start clock and
-  duration.
+- **Member detail** (click the label): seq, child session id with copy, effective model, requested
+  model (when it differs), mode, start clock and duration.
+- **Status is honest about crashes**: a member whose lifecycle never closed is `interrupted` unless the
+  shell reports its session live right now; the session log alone cannot tell a running worker from one
+  killed by a reboot.
+- **The model shown is the one that ran**, read from the child session's `modelSelection.lastUsed`
+  (the last request header), falling back to the route the caller asked for.
 - **Density** toggle (comfortable/compact), remembered per browser.
 - Every colour is a `--dsw-alias-*` theme token or a mix of one, so light and dark follow the host.
 
