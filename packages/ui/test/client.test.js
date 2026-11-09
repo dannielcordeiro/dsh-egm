@@ -110,7 +110,7 @@ test('the browser half never polls and runs a command only on a click', () => {
 test('the generated bundle matches its parts', () => {
   const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
   assert.ok(bundle.includes('GENERATED FILE, do not edit'))
-  assert.ok(bundle.includes("id: '@local/dsh-egm-ui'"))
+  assert.ok(bundle.includes('"@local/dsh-egm-ui"'))
 })
 
 test('status prefers live facts over the durable fold', () => {

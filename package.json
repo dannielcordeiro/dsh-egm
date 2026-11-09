@@ -1,6 +1,6 @@
 {
   "name": "dsh-egm",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Elephant-Goldfish Model for DeepSeek Harness: upstream EGM skills unchanged, per-role model routing, and a live run view in the browser and the terminal.",
@@ -11,18 +11,19 @@
   },
   "workspaces": [
     "packages/core",
-    "packages/ui"
+    "packages/ui",
+    "packages/workflow-view"
   ],
   "engines": {
     "node": ">=22 <25"
   },
   "scripts": {
-    "check": "npm run check --workspace @local/dsh-egm && npm run check --workspace @local/dsh-egm-ui",
-    "test": "npm run test --workspace @local/dsh-egm && npm run test --workspace @local/dsh-egm-ui",
+    "check": "npm run check --workspace @local/dsh-egm && npm run check --workspace @local/dsh-egm-ui && npm run check --workspace @local/dsh-workflow-view",
+    "test": "npm run test --workspace @local/dsh-egm && npm run test --workspace @local/dsh-egm-ui && npm run test --workspace @local/dsh-workflow-view",
     "vendor:sync": "node scripts/sync-upstream.mjs",
     "vendor:verify": "node scripts/verify-vendor.mjs",
     "verify": "npm run vendor:verify && npm run build:client && npm run check && npm test",
-    "build:client": "npm run build:client --workspace @local/dsh-egm-ui"
+    "build:client": "node scripts/bundle-client.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"

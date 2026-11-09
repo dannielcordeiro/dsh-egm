@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.0 — 2026-11-09
+
+**New package: `@local/dsh-workflow-view`**
+
+- A right-panel tab that lists every run the `workflow` tool started in the session: run selector,
+  phase-grouped timeline, per-member status, route, tokens and duration, and links into each member's
+  session.
+- Host half registers the `workflowRuns` projection, folding `tool-workflow/run-start|agent-start|
+  agent-end|run-end`. Runs without a `run-end` stay visible; a failed member inside a completed run is
+  reported as failed.
+- Live status and tokens come from the client session store; the route per member comes from
+  `subagentCatalog`. The client never polls and executes no command.
+- The entry point is a **⧉ Workflows** action in the session header, with the run count.
+- Script narration is not durable upstream, so it is not shown; the tab says so in the UI.
+
+**Repository**
+
+- `scripts/bundle-client.mjs` now builds and checks every `packages/*/src/client/*.js` collection, not
+  just the EGM bundle.
+
 ## 1.1.0 — 2026-11-08
 
 **Window (browser)**

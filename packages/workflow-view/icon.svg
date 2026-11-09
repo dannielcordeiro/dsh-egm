@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="dsh-egm: elephant head and goldfish tail split down the middle">
+  <rect width="64" height="64" rx="14" fill="#1B6EF3"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- elephant half: head, ear and trunk -->
+    <path d="M31 14c-6.5 0-11.5 4.6-11.5 11 0 4.2 1.6 6.8 1.6 10.2 0 4.6-2.9 6.2-2.9 9.6 0 2.6 2 4.4 4.4 4.4 2.5 0 4.3-1.9 4.3-4.4 0-2.3-1.5-3.4-1.5-5.6 0-2.6 1.9-4 1.9-7.4" />
+    <path d="M31 14c6.5 0 11.5 4.6 11.5 11 0 4.2-1.6 6.8-1.6 10.2" />
+    <circle cx="27" cy="26" r="1.9" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+    <!-- goldfish half: body and tail -->
+    <path d="M32 37c5.2 0 9.4 3.3 9.4 7.4 0 2.6-1.5 4.4-3.3 4.4-1.9 0-3-1.5-3-3.4" />
+    <path d="M47 38.5c-2.6 1.8-3.4 3.9-3.4 5.9s0.8 4.1 3.4 5.9c-3.6 1.2-6-1.6-6-5.9s2.4-7.1 6-5.9z" />
+  </g>
+  <path d="M32 12v40" stroke="#FFFFFF" stroke-width="1.2" stroke-dasharray="3 4" opacity="0.55"/>
+</svg>

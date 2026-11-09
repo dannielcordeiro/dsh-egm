@@ -1,21 +1,20 @@
 /**
  * Browser half of `@local/dsh-egm-ui` — GENERATED FILE, do not edit.
  *
- * Built from `packages/ui/src/client/*.js` by `scripts/bundle-client.mjs`
+ * Built from `src/client/*.js` by `scripts/bundle-client.mjs`
  * (`npm run build:client`). The Harness Web module loader serves one script per
  * package, so the parts are concatenated into one closure instead of imported.
- *
- * Surfaces: the EGM window (runs, configuration, artifacts, diagnostics), the
- * composer chip that opens it, the `/egm` command row, the reviewer card and the
- * settings page. The client never polls: every command it runs is a click.
  */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-egm-ui',
+  id: "@local/dsh-egm-ui",
   factory(require) {
     const React = require('react')
     const ReactDOM = require('react-dom')
     const h = React.createElement
     const { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } = React
+
+    /** Pure helpers exposed to the test suite; assigned by the apply part. */
+    let testApi
 
     // ---- 01-css.js ---------------------------------------------------------
     /** Styles for every surface this package draws. Theme tokens only. */
@@ -1051,6 +1050,9 @@ window.__ModuleLoader__.load({
       }
     }
 
-    return { inject, apply, __test: { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand, applyPlan } }
+    /** Helpers the test suite exercises without a browser. */
+    testApi = { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand, applyPlan }
+
+    return { inject, apply, __test: testApi }
   },
 })

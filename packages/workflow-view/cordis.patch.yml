@@ -1,0 +1,11 @@
+- insert:
+    # One row, exactly one, because this package declares a Web client half:
+    # the Harness client loader refuses a package that resolves from more than
+    # one active Loader source.
+    - id: workflow-view
+      name: '@local/dsh-workflow-view'
+      disabled: !!js "![...ctx.loader.entries()].some(entry => entry.options.name === '@deepseek-ai/dsh-client-modules' && !entry.disabled)"
+      config:
+        # How many runs the projection keeps. The log keeps every run; this caps
+        # what the projection carries and ships to the browser.
+        maxRuns: 50

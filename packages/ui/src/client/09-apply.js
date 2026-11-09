@@ -58,3 +58,6 @@ function apply(ctx) {
     console.warn(`dsh-egm-ui: settings section not registered: ${String(error?.message ?? error)}`)
   }
 }
+
+/** Helpers the test suite exercises without a browser. */
+testApi = { buildRuns, statusOf, routeTextOf, formatTokens, formatDuration, mergeChildren, routeCommand, testCommand, applyPlan }
