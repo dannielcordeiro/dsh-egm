@@ -30,6 +30,14 @@
   a phase rail in the timeline, member cards with a status dot, state badge and icon actions, and a
   footer note about script output not being durable.
 
+## 1.2.2 — 2026-11-09
+
+- **Workflows button opens the tab again.** The tab type was registered by probing `sidebarRightTabs` once
+  during activation; when the sidebar mounted later, no type was registered and the button opened a kind
+  nobody claimed. Registration now waits for the service (`ctx.inject`), and the action tries
+  `openTabIn(sessionId, 'workflow')`, then `openTab`, then `openResource`, reporting which one it used
+  instead of assuming success.
+
 **Repository**
 
 - `scripts/bundle-client.mjs` now builds and checks every `packages/*/src/client/*.js` collection, not

@@ -160,14 +160,9 @@ function WorkflowsHeaderAction({ ctx, t, sessionId, useProjection }) {
   }, [sessionId])
 
   const open = () => {
-    try {
-      if (sessionId !== undefined) activeSession = sessionId
-      const right = serviceOf(ctx, 'sidebarRight')
-      if (typeof right?.openTab === 'function') right.openTab('workflow')
-      else right?.openResource?.(`dsh-resource://workflow-view/session/${encodeURIComponent(sessionId ?? 'current')}`, { kind: 'workflow', preferNewPane: true })
-    } catch (failure) {
-      console.warn(`dsh-workflow-view: could not open the tab: ${String(failure?.message ?? failure)}`)
-    }
+    if (sessionId !== undefined) activeSession = sessionId
+    const used = openWorkflowTab(serviceOf(ctx, 'sidebarRight'), sessionId)
+    if (used === 'none') console.warn('dsh-workflow-view: no sidebar API accepted the tab; open it from the right column tab strip')
   }
 
   return h('button', {

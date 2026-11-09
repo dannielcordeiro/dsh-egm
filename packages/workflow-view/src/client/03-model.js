@@ -52,6 +52,35 @@ function openTarget({ parentSessionId, childSessionId, mode }) {
   return { parentSessionId, childSessionId, mode: MODES.has(mode) ? mode : 'continuable' }
 }
 
+/**
+ * Ask the sidebar to open the Workflows tab, using the most explicit API the
+ * shell offers. Each of the three returns nothing, success or not, so this
+ * reports which one it used instead of pretending to know it worked.
+ * @param {object} right the `sidebarRight` service, when composed.
+ * @param {string} [sessionId] the session the action was clicked in.
+ * @returns {'openTabIn'|'openTab'|'openResource'|'none'}
+ */
+function openWorkflowTab(right, sessionId) {
+  const address = `dsh-resource://workflow-view/session/${encodeURIComponent(sessionId ?? 'current')}`
+  // Presence is checked explicitly: `right?.method?.()` returns undefined for a
+  // method that does not exist, which would look like a successful call.
+  const attempts = [
+    ['openTabIn', typeof right?.openTabIn === 'function', () => right.openTabIn(sessionId, 'workflow')],
+    ['openTab', typeof right?.openTab === 'function', () => right.openTab('workflow')],
+    ['openResource', typeof right?.openResource === 'function', () => right.openResource(address, { kind: 'workflow', preferNewPane: true })],
+  ]
+  for (const [name, present, run] of attempts) {
+    if (!present) continue
+    try {
+      run()
+      return name
+    } catch {
+      // the next shape may exist in a different shell generation
+    }
+  }
+  return 'none'
+}
+
 /** Route text of one catalog entry. */
 function routeOf(entry) {
   if (entry?.agentProvider === undefined || entry?.agentModel === undefined) return null

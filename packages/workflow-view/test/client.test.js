@@ -57,6 +57,9 @@ function loadPlugin() {
   const injected = []
   const ctx = {
     locale: { register: (ns, dict) => { registrations.push({ kind: 'locale', ns, dict }) } },
+    inject: (names, callback) => {
+      if (names.every((name) => ctx[name] !== undefined)) callback(ctx)
+    },
     slots: {
       inject: (name, callback) => {
         injected.push(name)
@@ -227,6 +230,39 @@ test('the toolbar is rendered before any empty state', () => {
   assert.ok(toolbarAt > 0 && returnAt > toolbarAt, 'the toolbar is built once, before the return')
   assert.ok(tab.indexOf('toolbar,') > returnAt, 'the toolbar is always part of the tree')
   assert.equal(tab.includes('if (runsView === undefined) return'), false, 'no early return may skip the filters')
+})
+
+test('the header action uses the most explicit sidebar API available', () => {
+  const { plugin } = loadPlugin()
+  const { openWorkflowTab } = plugin.__test
+  const calls = []
+  const all = {
+    openTabIn: (sessionId, kind) => calls.push(['openTabIn', sessionId, kind]),
+    openTab: (kind) => calls.push(['openTab', kind]),
+    openResource: (address, options) => calls.push(['openResource', address, options.kind]),
+  }
+  assert.equal(openWorkflowTab(all, 's1'), 'openTabIn')
+  assert.deepEqual(calls, [['openTabIn', 's1', 'workflow']], 'only the best API is called, never all three')
+
+  const legacy = { openTab: (kind) => calls.push(['openTab', kind]) }
+  assert.equal(openWorkflowTab(legacy, 's1'), 'openTab')
+
+  const resourceOnly = { openResource: (address, options) => calls.push(['openResource', address, options.kind]) }
+  assert.equal(openWorkflowTab(resourceOnly, 's1'), 'openResource')
+
+  const throwing = {
+    openTabIn: () => { throw new Error('no adoption') },
+    openTab: () => calls.push(['openTab', 'fallback']),
+  }
+  assert.equal(openWorkflowTab(throwing, 's1'), 'openTab', 'a throwing shape falls through')
+  assert.deepEqual(calls.at(-1), ['openTab', 'fallback'])
+
+  assert.equal(openWorkflowTab(undefined, 's1'), 'none')
+})
+
+test('the tab type is registered through inject, not a one-shot probe', () => {
+  const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
+  assert.ok(bundle.includes("ctx.inject(['sidebarRightTabs']"), 'a probe that runs before the sidebar mounts leaves the type unregistered')
 })
 
 test('the manifest declares one web row and the client half', () => {

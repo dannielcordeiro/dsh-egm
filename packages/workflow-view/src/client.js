@@ -228,6 +228,35 @@ window.__ModuleLoader__.load({
       return { parentSessionId, childSessionId, mode: MODES.has(mode) ? mode : 'continuable' }
     }
 
+    /**
+     * Ask the sidebar to open the Workflows tab, using the most explicit API the
+     * shell offers. Each of the three returns nothing, success or not, so this
+     * reports which one it used instead of pretending to know it worked.
+     * @param {object} right the `sidebarRight` service, when composed.
+     * @param {string} [sessionId] the session the action was clicked in.
+     * @returns {'openTabIn'|'openTab'|'openResource'|'none'}
+     */
+    function openWorkflowTab(right, sessionId) {
+      const address = `dsh-resource://workflow-view/session/${encodeURIComponent(sessionId ?? 'current')}`
+      // Presence is checked explicitly: `right?.method?.()` returns undefined for a
+      // method that does not exist, which would look like a successful call.
+      const attempts = [
+        ['openTabIn', typeof right?.openTabIn === 'function', () => right.openTabIn(sessionId, 'workflow')],
+        ['openTab', typeof right?.openTab === 'function', () => right.openTab('workflow')],
+        ['openResource', typeof right?.openResource === 'function', () => right.openResource(address, { kind: 'workflow', preferNewPane: true })],
+      ]
+      for (const [name, present, run] of attempts) {
+        if (!present) continue
+        try {
+          run()
+          return name
+        } catch {
+          // the next shape may exist in a different shell generation
+        }
+      }
+      return 'none'
+    }
+
     /** Route text of one catalog entry. */
     function routeOf(entry) {
       if (entry?.agentProvider === undefined || entry?.agentModel === undefined) return null
@@ -501,14 +530,9 @@ window.__ModuleLoader__.load({
       }, [sessionId])
 
       const open = () => {
-        try {
-          if (sessionId !== undefined) activeSession = sessionId
-          const right = serviceOf(ctx, 'sidebarRight')
-          if (typeof right?.openTab === 'function') right.openTab('workflow')
-          else right?.openResource?.(`dsh-resource://workflow-view/session/${encodeURIComponent(sessionId ?? 'current')}`, { kind: 'workflow', preferNewPane: true })
-        } catch (failure) {
-          console.warn(`dsh-workflow-view: could not open the tab: ${String(failure?.message ?? failure)}`)
-        }
+        if (sessionId !== undefined) activeSession = sessionId
+        const used = openWorkflowTab(serviceOf(ctx, 'sidebarRight'), sessionId)
+        if (used === 'none') console.warn('dsh-workflow-view: no sidebar API accepted the tab; open it from the right column tab strip')
       }
 
       return h('button', {
@@ -554,16 +578,21 @@ window.__ModuleLoader__.load({
       }, (props) => h(WorkflowsHeaderAction, { ...props, ctx })))
 
       // The tab type, then its body keyed by the same id.
-      ctx.effect(() => {
-        const tabs = serviceOf(ctx, 'sidebarRightTabs')
-        if (tabs === undefined) return () => {}
-        return tabs.register({
+      //
+      // Registered through `inject`, never by probing once: the sidebar's tab registry
+      // is mounted by its own package, and a probe that runs first would leave the
+      // type unregistered — the header button then opens a kind nobody claims and
+      // nothing happens.
+      ctx.inject(['sidebarRightTabs'], (scope) => {
+        const tabs = serviceOf(scope, 'sidebarRightTabs')
+        if (tabs === undefined) return
+        ctx.effect(() => tabs.register({
           id: 'workflow',
           kind: 'workflow',
           priority: 'builtin',
           title: () => 'Workflows',
           canOpen: () => true,
-        })
+        }))
       })
 
       ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
@@ -575,7 +604,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Helpers the test suite exercises without a browser. */
-    testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget }
+    testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget, openWorkflowTab }
 
     return { inject, apply, __test: testApi }
   },

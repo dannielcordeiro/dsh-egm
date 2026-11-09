@@ -32,16 +32,21 @@ function apply(ctx) {
   }, (props) => h(WorkflowsHeaderAction, { ...props, ctx })))
 
   // The tab type, then its body keyed by the same id.
-  ctx.effect(() => {
-    const tabs = serviceOf(ctx, 'sidebarRightTabs')
-    if (tabs === undefined) return () => {}
-    return tabs.register({
+  //
+  // Registered through `inject`, never by probing once: the sidebar's tab registry
+  // is mounted by its own package, and a probe that runs first would leave the
+  // type unregistered — the header button then opens a kind nobody claims and
+  // nothing happens.
+  ctx.inject(['sidebarRightTabs'], (scope) => {
+    const tabs = serviceOf(scope, 'sidebarRightTabs')
+    if (tabs === undefined) return
+    ctx.effect(() => tabs.register({
       id: 'workflow',
       kind: 'workflow',
       priority: 'builtin',
       title: () => 'Workflows',
       canOpen: () => true,
-    })
+    }))
   })
 
   ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
@@ -53,4 +58,4 @@ function apply(ctx) {
 }
 
 /** Helpers the test suite exercises without a browser. */
-testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget }
+testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget, openWorkflowTab }
