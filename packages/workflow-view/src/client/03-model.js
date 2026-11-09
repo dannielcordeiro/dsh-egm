@@ -1,10 +1,10 @@
 /**
  * Pure model of what the tab shows: the projection's runs, enriched with the
  * route each member was created with (subagent catalog) and its live status and
- * tokens (client session store).
+ * tokens (client session store), plus the geometry the timeline needs.
  *
  * Everything here is a function of plain data, so the browser and the tests
- * compute the same rows.
+ * compute the same rows, bars and totals.
  */
 
 /** Glyph per member status. */
@@ -16,6 +16,9 @@ const GLYPH = {
   interrupted: '⊘',
   unknown: '·',
 }
+
+/** Modes the subagent chat resource accepts. */
+const MODES = new Set(['one-shot', 'continuable', 'unknown'])
 
 /** Compact token count. */
 function formatTokens(value) {
@@ -35,14 +38,31 @@ function formatDuration(ms) {
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}m`
 }
 
-/** Modes the subagent chat resource accepts. */
-const MODES = new Set(['one-shot', 'continuable', 'unknown'])
+/** Compact age of a timestamp, without a preposition. */
+function formatRelative(at, now = Date.now()) {
+  if (typeof at !== 'number' || !Number.isFinite(at)) return null
+  const delta = Math.max(0, now - at)
+  if (delta < 45_000) return 'now'
+  const minutes = Math.round(delta / 60_000)
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.round(delta / 3_600_000)
+  if (hours < 24) return `${hours} h`
+  return `${Math.round(delta / 86_400_000)} d`
+}
+
+/** Local clock time, HH:MM:SS. */
+function formatClock(at) {
+  if (typeof at !== 'number' || !Number.isFinite(at)) return null
+  const date = new Date(at)
+  return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((part) => String(part).padStart(2, '0'))
+    .join(':')
+}
 
 /** Address the sidebar chat tab accepts; both `parent` and `mode` are required. */
 function chatAddress({ parentSessionId, childSessionId, mode }) {
   if (typeof childSessionId !== 'string' || childSessionId === '') throw new Error('a child session is required')
-  const effective = MODES.has(mode) ? mode : 'continuable'
-  const query = new URLSearchParams({ parent: parentSessionId ?? '', mode: effective })
+  const query = new URLSearchParams({ parent: parentSessionId ?? '', mode: MODES.has(mode) ? mode : 'continuable' })
   return `dsh-resource://subagentchat/session/${encodeURIComponent(childSessionId)}?${query}`
 }
 
@@ -56,9 +76,6 @@ function openTarget({ parentSessionId, childSessionId, mode }) {
  * Ask the sidebar to open the Workflows tab, using the most explicit API the
  * shell offers. Each of the three returns nothing, success or not, so this
  * reports which one it used instead of pretending to know it worked.
- * @param {object} right the `sidebarRight` service, when composed.
- * @param {string} [sessionId] the session the action was clicked in.
- * @returns {'openTabIn'|'openTab'|'openResource'|'none'}
  */
 function openWorkflowTab(right, sessionId) {
   const address = `dsh-resource://workflow-view/session/${encodeURIComponent(sessionId ?? 'current')}`
@@ -96,10 +113,7 @@ function tokensOf(summary) {
   return sum > 0 ? sum : null
 }
 
-/**
- * Member status: the live flag wins, then the recorded outcome. A member with
- * neither is `unknown`, never a fabricated completion.
- */
+/** Member status: the live flag wins, then the recorded outcome. */
 function memberStatus(recorded, summary) {
   if (summary?.running === true) return 'running'
   return recorded ?? 'unknown'
@@ -130,6 +144,73 @@ function groupByPhase(members, noPhaseLabel) {
   return groups
 }
 
+/** Span of one run: recorded when present, derived from members otherwise. */
+function runSpan(run, now = Date.now()) {
+  const starts = run.agents.map((agent) => agent.startedAt).filter((value) => typeof value === 'number')
+  const ends = run.agents.map((agent) => agent.endedAt).filter((value) => typeof value === 'number')
+  const start = run.startedAt ?? (starts.length === 0 ? null : Math.min(...starts))
+  const approximate = run.startedAt === null || run.startedAt === undefined
+  const end = run.endedAt ?? (run.status === 'running' ? now : ends.length === 0 ? start : Math.max(...ends))
+  const span = { start, end: end === null ? null : Math.max(end, start ?? 0), approximate }
+  return { ...span, durationMs: start === null || span.end === null ? null : span.end - start }
+}
+
+/**
+ * Geometry of one member's bar inside the run span, as fractions of the track.
+ * A member with no start has no bar; a running member extends to `now` and is
+ * flagged live so the view can hatch it.
+ */
+function memberBar(member, span, now) {
+  if (span.start === null || span.end === null || span.end <= span.start) {
+    return typeof member.startedAt === 'number' ? { left: 0, width: 1, live: member.status === 'running' } : null
+  }
+  if (typeof member.startedAt !== 'number') return null
+  const total = span.end - span.start
+  const left = Math.min(1, Math.max(0, (member.startedAt - span.start) / total))
+  const rawEnd = typeof member.endedAt === 'number' ? member.endedAt : member.status === 'running' ? now : member.startedAt
+  const width = Math.min(1 - left, Math.max(0, (rawEnd - member.startedAt) / total))
+  return { left, width: width <= 0 ? 0.01 : width, live: member.status === 'running' }
+}
+
+/** Completed / running / failed / unknown split, with fractions for the bar. */
+function runProgress(run) {
+  const counts = { completed: 0, running: 0, failed: 0, unknown: 0 }
+  for (const agent of run.agents ?? []) {
+    const status = agent.status
+    counts[status] = (counts[status] ?? 0) + 1
+  }
+  const total = Object.values(counts).reduce((sum, value) => sum + value, 0)
+  const segments = ['completed', 'running', 'failed', 'unknown']
+    .map((status) => ({ status, count: counts[status] ?? 0, fraction: total === 0 ? 0 : (counts[status] ?? 0) / total }))
+    .filter((segment) => segment.count > 0)
+  return { counts, total, segments }
+}
+
+/** Duration and member count of each phase group. */
+function aggregatePhases(groups) {
+  return groups.map((group) => {
+    const starts = group.members.map((member) => member.startedAt).filter((value) => typeof value === 'number')
+    const ends = group.members.map((member) => member.endedAt).filter((value) => typeof value === 'number')
+    const durationMs = starts.length === 0 || ends.length === 0 ? null : Math.max(...ends) - Math.min(...starts)
+    return { phase: group.phase, label: group.label, count: group.members.length, durationMs: durationMs !== null && durationMs > 0 ? durationMs : null }
+  })
+}
+
+/** Totals across every run of the session. */
+function summarize(runs) {
+  let members = 0
+  let failed = 0
+  let running = 0
+  let tokens = 0
+  for (const run of runs) {
+    members += run.members.length
+    failed += run.members.filter((member) => member.status === 'failed').length
+    running += run.members.filter((member) => member.status === 'running').length
+    for (const member of run.members) tokens += member.tokens ?? 0
+  }
+  return { runs: runs.length, members, failed, running, tokens }
+}
+
 /**
  * Build the tab's rows.
  * @param {object} input
@@ -137,13 +218,13 @@ function groupByPhase(members, noPhaseLabel) {
  * @param {object[]|undefined} input.catalog the `subagentCatalog` view.
  * @param {object|undefined} input.sessions the client session store snapshot.
  * @param {'all'|'running'|'failed'} [input.filter] run filter.
- * @param {number} [input.now] render timestamp, for durations of running members.
+ * @param {number} [input.now] render timestamp, for live bars and ages.
  * @param {string} input.noPhaseLabel label used for members without a phase.
  */
 function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), noPhaseLabel = 'no phase' }) {
   const index = catalogIndex(catalog)
   const byId = sessions?.byId ?? {}
-  const runs = (view?.runs ?? [])
+  return (view?.runs ?? [])
     .map((run) => {
       const members = (run.agents ?? []).map((agent) => {
         const entry = agent.childId === null ? undefined : index.get(agent.childId)
@@ -151,7 +232,7 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
         const status = memberStatus(agent.status, summary)
         const started = agent.startedAt ?? summary?.createdAt ?? null
         const ended = agent.endedAt ?? null
-        const durationMs = started === null ? null : (ended ?? now) - started
+        const durationMs = started === null ? null : (ended ?? (status === 'running' ? now : started)) - started
         return {
           seq: agent.seq,
           mode: MODES.has(entry?.mode) ? entry.mode : 'continuable',
@@ -163,30 +244,38 @@ function buildTab({ view, catalog, sessions, filter = 'all', now = Date.now(), n
           route: routeOf(entry),
           tokens: tokensOf(summary),
           durationMs: status === 'running' || status === 'unknown' ? null : durationMs,
+          rawDurationMs: durationMs,
           startedAt: started,
+          endedAt: ended,
         }
       })
+      const span = runSpan({ ...run, agents: run.agents ?? [] }, now)
+      const withBars = members.map((member) => ({ ...member, bar: memberBar(member, span, now) }))
+      const groups = groupByPhase(withBars, noPhaseLabel)
+      const progress = runProgress({ agents: withBars })
       return {
         ...run,
-        members,
-        groups: groupByPhase(members, noPhaseLabel),
+        members: withBars,
+        groups,
+        phases: aggregatePhases(groups),
+        span,
+        progress,
         counts: {
           total: members.length,
-          running: members.filter((member) => member.status === 'running').length,
-          failed: members.filter((member) => member.status === 'failed').length,
+          running: progress.counts.running ?? 0,
+          failed: progress.counts.failed ?? 0,
         },
       }
     })
     .filter((run) => (filter === 'running' ? run.status === 'running' || run.counts.running > 0 : filter === 'failed' ? run.counts.failed > 0 : true))
-  return runs
 }
 
 /** One-line fact string for a member row. */
-function memberFacts(member, t) {
+function memberFacts(member, t, { now = Date.now() } = {}) {
   return [
-    member.phase === null ? null : `${t('phase')} ${member.phase}`,
     member.route ?? t('noRoute'),
     formatTokens(member.tokens) === null ? null : `${formatTokens(member.tokens)} ${t('tokens')}`,
     formatDuration(member.durationMs),
+    member.status === 'running' ? `${t('running')} ${formatRelative(member.startedAt, now) ?? ''}`.trim() : null,
   ].filter((fact) => fact !== null && fact !== undefined).join(' · ')
 }

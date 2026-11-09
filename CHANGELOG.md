@@ -30,6 +30,24 @@
   a phase rail in the timeline, member cards with a status dot, state badge and icon actions, and a
   footer note about script output not being durable.
 
+## 1.3.0 — 2026-11-09
+
+**Workflow view: a designed screen**
+
+- Header carries session totals (runs, members, failures, tokens) next to the filter pills.
+- Run list rows gained a status dot, age, duration and a micro bar of the run's status split.
+- The selected run now has its own card: status, relative start, duration, counts, a segmented
+  progress bar and a colour legend.
+- Phase timeline draws a **proportional duration bar per member** inside the run span, so parallel
+  members are visible; a running member extends to now with a hatched bar.
+- Member label opens a detail block (seq, session id with copy, route, mode, start clock, duration).
+- Density toggle (comfortable/compact) remembered per browser; reduced-motion respected.
+- Styles are theme tokens only — no literal colours, enforced by a test — and the plugin no longer
+  writes a `<style>` element into the document head: styles ride inside the rendered components.
+- New pure helpers with tests: `runSpan`, `memberBar`, `runProgress`, `aggregatePhases`,
+  `summarize`, `formatRelative`, `formatClock`; plus a render smoke test that builds the whole tab
+  from the three views and a guard that every class used has a rule.
+
 ## 1.2.2 — 2026-11-09
 
 - **Workflows button opens the tab again.** The tab type was registered by probing `sidebarRightTabs` once

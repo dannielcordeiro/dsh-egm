@@ -1,6 +1,6 @@
 {
   "name": "dsh-egm",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "description": "Elephant-Goldfish Model for DeepSeek Harness: upstream EGM skills unchanged, per-role model routing, and a live run view in the browser and the terminal.",

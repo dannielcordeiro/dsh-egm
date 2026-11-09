@@ -12,15 +12,9 @@ function apply(ctx) {
   const disposeLocale = ctx.locale.register(NS, DICT)
   if (typeof disposeLocale === 'function') ctx.effect(() => disposeLocale)
 
-  ctx.effect(() => {
-    const style = document.createElement('style')
-    style.dataset.plugin = NS
-    style.textContent = `.${WFV_HEADER_CLASS}{box-sizing:border-box;height:26px;padding:0 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm,6px);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}
-.${WFV_HEADER_CLASS}:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent);color:var(--dsw-alias-label-primary)}
-.${WFV_HEADER_CLASS}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-brand-primary));outline-offset:2px}`
-    document.head.appendChild(style)
-    return () => style.remove()
-  })
+  // Styles live inside the components that use them (a <style> element in the
+  // rendered tree), never in a DOM write of their own: the plugin contributes
+  // through slots only, and its styles disappear with the slot entry.
 
   // Header action: the entry point, with a count.
   ctx.slots.inject('conversation.session.header.actions', () => ctx.slots.register({
@@ -58,4 +52,8 @@ function apply(ctx) {
 }
 
 /** Helpers the test suite exercises without a browser. */
-testApi = { buildTab, formatTokens, formatDuration, routeOf, groupByPhase, memberStatus, chatAddress, openTarget, openWorkflowTab }
+testApi = {
+  buildTab, formatTokens, formatDuration, formatRelative, formatClock, routeOf, groupByPhase, memberStatus,
+  chatAddress, openTarget, openWorkflowTab, runSpan, memberBar, runProgress, aggregatePhases, summarize, memberFacts,
+  WorkflowsTab, WorkflowsHeaderAction, renderBody, renderMember,
+}

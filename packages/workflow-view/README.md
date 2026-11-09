@@ -26,6 +26,20 @@ tokens). Nothing polls and no command is executed, so opening the tab costs noth
 the session log. The tab therefore shows runs, members, phases (from members), status and usage, and
 never pretends to have the script output.
 
+## The screen
+
+- **Session totals** in the header: runs, members, failures, tokens.
+- **Run list** with a status dot, age, duration, member count and a micro bar of the run's
+  completed/running/failed split.
+- **Selected run card**: status, start (relative), duration, member and failure counts, a segmented
+  progress bar and a colour legend.
+- **Phase timeline**: each member gets a proportional **duration bar** placed inside the run's span, so
+  parallel members are visible; a running member extends to now with a hatched bar.
+- **Member detail** (click the label): seq, child session id with copy, route, mode, start clock and
+  duration.
+- **Density** toggle (comfortable/compact), remembered per browser.
+- Every colour is a `--dsw-alias-*` theme token or a mix of one, so light and dark follow the host.
+
 ## Use
 
 1. Install into the profile and restart:

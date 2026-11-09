@@ -28,7 +28,7 @@ function loadPlugin() {
         this.state = {}
       }
     },
-    useState: (initial) => [initial, () => {}],
+    useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
     useEffect: () => {},
     useCallback: (fn) => fn,
     useMemo: (fn) => fn(),
@@ -263,6 +263,146 @@ test('the header action uses the most explicit sidebar API available', () => {
 test('the tab type is registered through inject, not a one-shot probe', () => {
   const bundle = readFileSync(join(PACKAGE_ROOT, 'src', 'client.js'), 'utf8')
   assert.ok(bundle.includes("ctx.inject(['sidebarRightTabs']"), 'a probe that runs before the sidebar mounts leaves the type unregistered')
+})
+
+test('a member bar is placed inside the run span', () => {
+  const { plugin } = loadPlugin()
+  const { memberBar, runSpan } = plugin.__test
+  const span = { start: 1_000, end: 2_000, approximate: false, durationMs: 1_000 }
+  const finished = memberBar({ startedAt: 1_200, endedAt: 1_400, status: 'completed' }, span, 2_500)
+  assert.ok(Math.abs(finished.left - 0.2) < 1e-9)
+  assert.ok(Math.abs(finished.width - 0.2) < 1e-9)
+  assert.equal(finished.live, false)
+
+  const live = memberBar({ startedAt: 1_500, endedAt: null, status: 'running' }, span, 1_800)
+  assert.ok(Math.abs(live.left - 0.5) < 1e-9)
+  assert.ok(Math.abs(live.width - 0.3) < 1e-9, 'a running member extends to now')
+  assert.equal(live.live, true)
+
+  assert.equal(memberBar({ startedAt: null, status: 'unknown' }, span, 1_800), null, 'no start, no bar')
+  assert.deepEqual(memberBar({ startedAt: 5, status: 'completed' }, { start: 5, end: 5 }, 6), { left: 0, width: 1, live: false })
+
+  const derived = runSpan({ startedAt: null, endedAt: null, status: 'completed', agents: [
+    { startedAt: 10, endedAt: 20 }, { startedAt: 30, endedAt: 60 },
+  ] }, 100)
+  assert.equal(derived.start, 10)
+  assert.equal(derived.end, 60)
+  assert.equal(derived.approximate, true)
+  assert.equal(derived.durationMs, 50)
+})
+
+test('a run progress bar splits every status and sums to the whole', () => {
+  const { plugin } = loadPlugin()
+  const { runProgress } = plugin.__test
+  const progress = runProgress({ agents: [
+    { status: 'completed' }, { status: 'completed' }, { status: 'running' }, { status: 'failed' },
+  ] })
+  assert.deepEqual(progress.counts, { completed: 2, running: 1, failed: 1, unknown: 0 })
+  assert.equal(progress.segments.reduce((sum, segment) => sum + segment.fraction, 0), 1)
+  assert.deepEqual(progress.segments.map((segment) => segment.status), ['completed', 'running', 'failed'])
+  assert.deepEqual(runProgress({ agents: [] }).segments, [])
+})
+
+test('ages and clock times read compactly', () => {
+  const { plugin } = loadPlugin()
+  const { formatRelative, formatClock, formatDuration } = plugin.__test
+  const now = 1_700_000_000_000
+  assert.equal(formatRelative(now - 1_000, now), 'now')
+  assert.equal(formatRelative(now - 12 * 60_000, now), '12 min')
+  assert.equal(formatRelative(now - 3 * 3_600_000, now), '3 h')
+  assert.equal(formatRelative(now - 2 * 86_400_000, now), '2 d')
+  assert.equal(formatRelative(now + 60_000, now), 'now', 'a future stamp never reads negative')
+  assert.equal(formatRelative(null, now), null)
+  assert.equal(formatClock(1_700_000_000_000).length, 8)
+  assert.equal(formatClock(undefined), null)
+  assert.equal(formatDuration(0), null)
+})
+
+test('phase aggregates and session totals are computed once', () => {
+  const { plugin } = loadPlugin()
+  const { aggregatePhases, summarize } = plugin.__test
+  const phases = aggregatePhases([
+    { phase: 'A', label: 'A', members: [{ startedAt: 100, endedAt: 200 }, { startedAt: 150, endedAt: 400 }] },
+    { phase: null, label: 'sem fase', members: [{ startedAt: null, endedAt: null }] },
+  ])
+  assert.deepEqual(phases[0], { phase: 'A', label: 'A', count: 2, durationMs: 300 })
+  assert.deepEqual(phases[1], { phase: null, label: 'sem fase', count: 1, durationMs: null })
+
+  const totals = summarize([
+    { members: [{ status: 'completed', tokens: 100 }, { status: 'failed', tokens: 50 }] },
+    { members: [{ status: 'running', tokens: null }] },
+  ])
+  assert.deepEqual(totals, { runs: 2, members: 3, failed: 1, running: 1, tokens: 150 })
+})
+
+test('styles use theme tokens only, and every class used exists', () => {
+  const css = readFileSync(join(PACKAGE_ROOT, 'src', 'client', '01-css.js'), 'utf8')
+  assert.equal(/#[0-9a-fA-F]{3,8}\b/u.test(css), false, 'no literal hex colours')
+  assert.equal(/\brgba?\(/u.test(css), false, 'no literal rgb colours')
+  const declared = new Set([...css.matchAll(/\.(wfv-[a-z0-9-]+)/gu)].map((match) => match[1]))
+  const used = new Set([...readFileSync(join(PACKAGE_ROOT, 'src', 'client', '04-tab.js'), 'utf8').matchAll(/className: '([^']+)'/gu)].map((match) => match[1]))
+  for (const name of used) {
+    for (const part of name.split(/\s+/u)) assert.ok(declared.has(part), `class ${part} has no rule`)
+  }
+})
+
+test('the whole tab renders from the three views without throwing', () => {
+  const { plugin } = loadPlugin()
+  const { WorkflowsTab } = plugin.__test
+  const view = {
+    runs: [{
+      runId: 'r1',
+      name: 'fase0-etapa-b',
+      startedAt: 1_000,
+      endedAt: 4_000,
+      stopReason: 'completed',
+      status: 'completed',
+      failed: 1,
+      agents: [
+        { seq: 1, label: 'B1-schema', phase: 'Etapa B', childId: 'c1', startedAt: 1_100, endedAt: 2_000, outcome: 'completed', status: 'completed' },
+        { seq: 2, label: 'B2-models', phase: 'Etapa B', childId: 'c2', startedAt: 1_200, endedAt: 3_000, outcome: 'failed', status: 'failed' },
+        { seq: 3, label: 'sem-fase', phase: null, childId: 'c3', startedAt: 3_100, endedAt: null, outcome: null, status: 'running' },
+      ],
+    }],
+  }
+  const catalog = [{ id: 'c1', mode: 'continuable', agentProvider: 'deepseek-official', agentModel: 'deepseek-flash', agentReasoningEffort: 'high' }]
+  const sessions = { byId: { c2: { running: false, projectionValues: { tokenUsage: { totals: { uncachedInputTokens: 800, outputTokens: 200 } } } } } }
+  const tree = WorkflowsTab({
+    ctx: { sessions: { list: { subscribe: () => () => {}, getSnapshot: () => sessions } } },
+    t: (key) => key,
+    sessionId: 's1',
+    useProjection: (key) => (key === 'workflowRuns' ? view : catalog),
+  })
+  const text = JSON.stringify(tree, (key, value) => (typeof value === 'function' ? '[fn]' : value))
+  assert.match(text, /wfv-root/u)
+  assert.match(text, /fase0-etapa-b/u)
+  assert.match(text, /Etapa B/u)
+  assert.match(text, /wfv-track/u, 'every member draws its duration bar')
+  assert.match(text, /deepseek-official\/deepseek-flash#high/u, 'the route survives the render')
+  assert.match(text, /"data-density":"comfortable"/u)
+})
+
+test('an empty projection and empty filters still render the toolbar', () => {
+  const { plugin } = loadPlugin()
+  const { WorkflowsTab } = plugin.__test
+  const base = {
+    ctx: {},
+    t: (key) => key,
+    sessionId: 's1',
+    useProjection: () => ({ runs: [] }),
+  }
+  const empty = JSON.stringify(WorkflowsTab(base), (key, value) => (typeof value === 'function' ? '[fn]' : value))
+  assert.match(empty, /wfv-bar-head/u, 'the toolbar exists even with no run')
+  assert.match(empty, /noRuns/u)
+
+  const noMatch = JSON.stringify(WorkflowsTab({
+    ...base,
+    useProjection: (key) => (key === 'workflowRuns'
+      ? { runs: [{ runId: 'r1', name: 'only', status: 'completed', failed: 0, agents: [] }] }
+      : []),
+  }), (key, value) => (typeof value === 'function' ? '[fn]' : value))
+  assert.match(noMatch, /wfv-bar-head/u)
+  assert.match(noMatch, /noMembers/u)
 })
 
 test('the manifest declares one web row and the client half', () => {
