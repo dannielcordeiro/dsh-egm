@@ -282,7 +282,9 @@ function WorkflowsTab({ ctx, t, sessionId, useProjection }) {
       },
         renderDot(run.status),
         h('span', { className: 'wfv-run-name' }, run.name || run.runId.slice(0, 8)),
-        h('span', { className: 'wfv-run-when' }, [formatRelative(run.span.start, now), formatDuration(run.span.durationMs)].filter(Boolean).join(' · ') || '—'),
+        h('span', { className: 'wfv-run-when' }, run.status === 'running'
+          ? [formatRelative(run.span.start, now), formatDuration(run.span.durationMs)].filter(Boolean).join(' · ') || '—'
+          : formatDuration(run.span.durationMs) ?? '—'),
         h('span', { className: 'wfv-run-facts' },
           `${run.counts.total} ${t('members')}`,
           run.counts.failed === 0 ? null : h('span', { className: 'wfv-chip', 'data-s': 'failed' }, String(run.counts.failed))),

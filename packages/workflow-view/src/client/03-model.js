@@ -150,11 +150,15 @@ function memberStatus(recorded, summary) {
   return recorded
 }
 
-/** Run status: a recorded reason wins, else live members, else interrupted. */
+/**
+ * Run status. A recorded stop reason wins; a recorded `running` does not, because
+ * it can only come from a stale Host projection (a run killed by a reboot keeps
+ * it forever). A run is running when one of its members is live right now, and
+ * otherwise, if its lifecycle never closed, it is interrupted.
+ */
 function runStatus(run, members) {
   const recorded = run.stopReason ?? run.status
-  if (recorded === 'running') return 'running'
-  if (recorded !== null && recorded !== undefined && recorded !== 'open') return recorded
+  if (recorded !== null && recorded !== undefined && recorded !== 'open' && recorded !== 'running') return recorded
   if (members.some((member) => member.status === 'running')) return 'running'
   if (members.length === 0) return 'unknown'
   return 'interrupted'

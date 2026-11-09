@@ -30,6 +30,16 @@
   a phase rail in the timeline, member cards with a status dot, state badge and icon actions, and a
   footer note about script output not being durable.
 
+## 1.4.1 — 2026-11-09
+
+- **A run whose workers died no longer reads as running in the list.** The client used to honour a
+  recorded `status: running` from the projection; a Host still running the previous projection (modules
+  load at boot, so a page reload does not refresh them) kept emitting it forever, and the run list drew
+  the live dot and a growing duration while its members already read `interrupted`. Run status now
+  derives from live members only: a recorded `running` is treated like `open`.
+- The run list shows the **duration** for a finished or interrupted run, and the age only while it is
+  genuinely running, so a static run cannot look like a clock.
+
 ## 1.4.0 — 2026-11-09
 
 **Workflow view: tokens, honest status, and the model that actually ran**

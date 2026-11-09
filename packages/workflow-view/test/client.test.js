@@ -174,13 +174,14 @@ test('the run filter selects by status and by failed members', () => {
   const view = {
     runs: [
       { runId: 'r1', name: 'a', status: 'completed', agents: [{ seq: 1, label: 'x', phase: null, childId: null, status: 'failed' }] },
-      { runId: 'r2', name: 'b', status: 'running', agents: [] },
+      { runId: 'r2', name: 'b', status: 'open', agents: [{ seq: 1, label: 'live', phase: null, childId: 'c-live', status: 'open' }] },
       { runId: 'r3', name: 'c', status: 'completed', agents: [] },
     ],
   }
   const runs = buildTab({ view, catalog: [], sessions: {}, filter: 'all', noPhaseLabel: 'none' })
   assert.equal(runs.length, 3)
-  assert.deepEqual(buildTab({ view, catalog: [], sessions: {}, filter: 'running', noPhaseLabel: 'none' }).map((run) => run.runId), ['r2'])
+  assert.deepEqual(buildTab({ view, catalog: [], sessions: { byId: { 'c-live': { running: true } } }, filter: 'running', noPhaseLabel: 'none' }).map((run) => run.runId), ['r2'])
+  assert.deepEqual(buildTab({ view, catalog: [], sessions: {}, filter: 'running', noPhaseLabel: 'none' }), [], 'a recorded running is not enough')
   assert.deepEqual(buildTab({ view, catalog: [], sessions: {}, filter: 'failed', noPhaseLabel: 'none' }).map((run) => run.runId), ['r1'])
 })
 
@@ -199,6 +200,7 @@ test('runs follow the same rule: no stop reason, no live member, interrupted', (
   const { plugin } = loadPlugin()
   const { buildTab } = plugin.__test
   const build = (run, sessions = {}) => buildTab({ view: { runs: [run] }, catalog: [], sessions, noPhaseLabel: 'none' })[0]
+  assert.equal(build({ runId: 'r', status: 'running', stopReason: null, agents: [{ seq: 1, status: 'open', childId: null }] }).status, 'interrupted', 'a stale recorded running never survives')
   assert.equal(build({ runId: 'r', status: 'open', stopReason: null, agents: [{ seq: 1, status: 'open', childId: null }] }).status, 'interrupted')
   const live = build({ runId: 'r', status: 'open', stopReason: null, agents: [{ seq: 1, status: 'open', childId: 'c1' }] }, { byId: { c1: { running: true } } })
   assert.equal(live.status, 'running', 'a member the shell reports live makes the run live')

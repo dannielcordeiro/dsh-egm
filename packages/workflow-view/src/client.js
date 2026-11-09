@@ -439,11 +439,15 @@ window.__ModuleLoader__.load({
       return recorded
     }
 
-    /** Run status: a recorded reason wins, else live members, else interrupted. */
+    /**
+     * Run status. A recorded stop reason wins; a recorded `running` does not, because
+     * it can only come from a stale Host projection (a run killed by a reboot keeps
+     * it forever). A run is running when one of its members is live right now, and
+     * otherwise, if its lifecycle never closed, it is interrupted.
+     */
     function runStatus(run, members) {
       const recorded = run.stopReason ?? run.status
-      if (recorded === 'running') return 'running'
-      if (recorded !== null && recorded !== undefined && recorded !== 'open') return recorded
+      if (recorded !== null && recorded !== undefined && recorded !== 'open' && recorded !== 'running') return recorded
       if (members.some((member) => member.status === 'running')) return 'running'
       if (members.length === 0) return 'unknown'
       return 'interrupted'
@@ -900,7 +904,9 @@ window.__ModuleLoader__.load({
           },
             renderDot(run.status),
             h('span', { className: 'wfv-run-name' }, run.name || run.runId.slice(0, 8)),
-            h('span', { className: 'wfv-run-when' }, [formatRelative(run.span.start, now), formatDuration(run.span.durationMs)].filter(Boolean).join(' · ') || '—'),
+            h('span', { className: 'wfv-run-when' }, run.status === 'running'
+              ? [formatRelative(run.span.start, now), formatDuration(run.span.durationMs)].filter(Boolean).join(' · ') || '—'
+              : formatDuration(run.span.durationMs) ?? '—'),
             h('span', { className: 'wfv-run-facts' },
               `${run.counts.total} ${t('members')}`,
               run.counts.failed === 0 ? null : h('span', { className: 'wfv-chip', 'data-s': 'failed' }, String(run.counts.failed))),
